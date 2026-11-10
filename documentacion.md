@@ -105,6 +105,56 @@ php artisan migrate:fresh --seed
 
 ---
 
+## Paso 3 — Autenticación con Sanctum, dominio @unab.edu.co, roles y Policies
+**Qué se hizo:** endpoints `register`, `login`, `logout`, `me`, tokens personales (`/me/tokens`), panel `/admin/users` protegido con `role:admin`, Policies `ProyectoPolicy`/`ComentarioPolicy` y errores JSON uniformes en español.
+
+**Endpoints:**
+| Método | Ruta | Acceso | Respuesta |
+|---|---|---|---|
+| POST | `/api/v1/register` | público (`throttle:registro` 10/min) | 201 `{token, user}` |
+| POST | `/api/v1/login` | público (`throttle:login` 5/min por correo+IP) | 200 `{token, user}` |
+| POST | `/api/v1/logout` | auth | 204 |
+| GET | `/api/v1/me` | auth | 200 `{data: user}` |
+| GET/POST | `/api/v1/me/tokens` | auth | 200 lista · 201 `{token, aviso}` (token visible una sola vez) |
+| DELETE | `/api/v1/me/tokens/{id}` | auth (solo tokens propios) | 204 · 404 |
+| GET | `/api/v1/admin/users?q=&role=` | `role:admin` | 200 paginado `{data, links, meta}` |
+| POST | `/api/v1/admin/users` | `role:admin` | 201 crea **admin** |
+| DELETE | `/api/v1/admin/users/{user}` | `role:admin` | 204 · 403 si es él mismo |
+
+**Por qué:**
+- **Sanctum con token Bearer** (no cookies/sesión) porque el frontend Lovable está en otro dominio y el servidor MCP también consume la API con token.
+- **Dominio en dos capas (registro y login)** mediante el trait `ValidaCorreoInstitucional`: `prepareForValidation()` normaliza `strtolower(trim())` y la regla `ends_with:@unab.edu.co` (tomada de `config('auth.allowed_domain')`) se reutiliza en `RegisterRequest`, `LoginRequest` y `StoreAdminUserRequest`. Se incluye la `@` para que `x@unab.edu.co.fake.com` y `x@falsounab.edu.co` fallen. Mensaje: "Solo se permiten correos institucionales @unab.edu.co".
+- **Registro público siempre `estudiante`**: la Action `RegistrarEstudiante` asigna el rol explícitamente y `role` no es fillable, así que `"role":"admin"` en el body se ignora. Los admins solo se crean por `AdminSeeder` o `POST /admin/users` (Action `CrearAdmin`).
+- **Login con mensaje genérico** (`auth.failed`, 422) tanto si el correo no existe como si la contraseña falla: no revela qué cuentas existen. Throttle por correo+IP contra fuerza bruta.
+- **Lógica en Actions** (`app/Actions/Auth`): `RegistrarEstudiante`, `IniciarSesion`, `EmitirToken`, `CrearAdmin`, `EliminarUsuario`. Los controladores solo orquestan; el MCP podrá reutilizarlas.
+- **Middleware `EnsureRole`** (alias `role`) para grupos completos (`/admin`); **Policies** para reglas sobre un registro concreto (dueño o admin). Se registran solas por convención de nombres (`Proyecto` → `ProyectoPolicy`).
+- Un admin no puede borrarse a sí mismo (evita quedarse sin administradores por error) → 403 con mensaje claro. Al eliminar una cuenta se revocan sus tokens en la misma transacción.
+- **`ForzarRespuestaJson`** antepuesto al grupo `api`: aunque el cliente olvide `Accept: application/json`, la validación devuelve 422 JSON en lugar de un redirect 302.
+- **Errores uniformes** en `bootstrap/app.php`: 401 "No autenticado…", 403 "No tienes permiso…", 404 "El recurso solicitado no existe." / "Ruta no encontrada.", 405, 429 "Demasiadas solicitudes…". `redirectGuestsTo` devuelve `null` en `api/*` para no buscar la ruta `login` web.
+- Contraseñas: estudiante mínimo 8 con letras y números; admin mínimo 10 con letras, números y símbolos. Se guardan con hash (cast `hashed`).
+- `GET /admin/users` filtra en SQL con `when()` + `ilike` y pagina de a 12.
+- Tokens sin expiración (`sanctum.expiration = null`) por ahora; se revocan con logout o `DELETE /me/tokens/{id}`. Pendiente evaluar expiración para producción.
+- Sin `MustVerifyEmail` (pregunta abierta 3): requiere SMTP; queda documentado como riesgo (alguien podría registrar un correo @unab ajeno).
+
+**Comandos:**
+```bash
+./vendor/bin/pest --filter="AuthTest|RolesTest"
+php artisan route:list --path=api/v1
+php artisan serve
+```
+**Archivos:** `app/Actions/Auth/*`, `app/Http/Controllers/Api/V1/{AuthController,TokenController}.php`, `app/Http/Controllers/Api/V1/Admin/UserController.php`, `app/Http/Requests/Concerns/ValidaCorreoInstitucional.php`, `app/Http/Requests/Auth/{RegisterRequest,LoginRequest,StoreTokenRequest}.php`, `app/Http/Requests/Admin/StoreAdminUserRequest.php`, `app/Http/Resources/UserResource.php`, `app/Http/Middleware/{EnsureRole,ForzarRespuestaJson}.php`, `app/Policies/{ProyectoPolicy,ComentarioPolicy}.php`, `app/Providers/AppServiceProvider.php`, `bootstrap/app.php`, `routes/api.php`, `tests/Feature/{AuthTest,RolesTest}.php`.
+**Cómo probar (Postman, header `Accept: application/json`):**
+1. `POST {{base_url}}/api/v1/register` body `{"name":"Ana Pérez","email":"Ana@UNAB.edu.co","password":"secreto123","password_confirmation":"secreto123"}` → **201**, `user.email = "ana@unab.edu.co"`, `user.role = "estudiante"`. Script de tests: `pm.environment.set("token", pm.response.json().token)`.
+2. Mismo body con `"email":"ana@gmail.com"` → **422** `errors.email[0] = "Solo se permiten correos institucionales @unab.edu.co"`.
+3. `POST /api/v1/login` `{"email":"admin@unab.edu.co","password":"Admin12345*"}` → **200** `{token, user}` (admin del seeder en local).
+4. `GET /api/v1/me` con `Authorization: Bearer {{token}}` → **200**; sin token → **401**.
+5. `GET /api/v1/admin/users` con token de estudiante → **403**; con token de admin → **200** paginado.
+6. `POST /api/v1/logout` → **204**; repetir `/me` con el mismo token → **401**.
+Pruebas automáticas: `./vendor/bin/pest` → 38 pruebas verdes.
+**Commit:** `feat: implementar autenticación Sanctum con dominio institucional y roles`
+
+---
+
 ## Preguntas de sustentación
 
 ### Básicas
@@ -123,7 +173,34 @@ Un archivo PHP versionado que describe cambios al esquema (crear tabla, agregar 
 **¿Qué es Eloquent?**
 El ORM de Laravel: cada tabla se representa con un modelo (`Proyecto`) y las relaciones (`belongsTo`, `hasMany`, `belongsToMany`) se navegan como propiedades (`$proyecto->user->email`).
 
+**¿Qué significa cada código (200/201/204/401/403/404/422/429)?**
+200 OK (lectura/login), 201 recurso creado (registro), 204 éxito sin cuerpo (logout/borrar), 401 no autenticado (falta o es inválido el token), 403 autenticado pero sin permiso, 404 no existe, 422 datos inválidos, 429 demasiados intentos.
+
+**¿Para qué sirve un FormRequest?**
+Saca la validación del controlador a una clase (`RegisterRequest`) con `rules()`, `messages()` y `prepareForValidation()`. Si falla, Laravel responde 422 automáticamente y el controlador solo recibe datos válidos con `$request->validated()`.
+
+**¿Qué es un middleware?**
+Un filtro que se ejecuta antes/después de la petición. `auth:sanctum` exige token válido, `role:admin` exige rol, `throttle:login` limita intentos y `ForzarRespuestaJson` fija el header `Accept`.
+
 ### Avanzadas
+**¿Cómo se diferencia un usuario autenticado de uno anónimo en una API?**
+Por el header `Authorization: Bearer <token>`. Sanctum busca el hash del token en `personal_access_tokens` y carga al usuario; sin token (o revocado) `$request->user()` es `null` y las rutas con `auth:sanctum` responden 401.
+
+**¿Por qué validar el dominio en registro y login, y por qué `ends_with` con la `@`?**
+En registro evita crear cuentas externas; en login bloquea cuentas que pudieron entrar por otro camino (BD, error previo). Con la `@` incluida, `x@unab.edu.co.fake.com` o `x@falsounab.edu.co` no pasan; normalizar a minúsculas evita que `UNAB.EDU.CO` lo esquive.
+
+**¿Policy vs middleware?**
+El middleware decide por ruta/grupo sin mirar el registro (¿es admin?). La Policy decide sobre un modelo concreto (¿este usuario es dueño de *este* proyecto?). Se usan juntos: `role:admin` para `/admin`, `ProyectoPolicy` para editar/borrar.
+
+**¿Por qué el login responde el mismo error si el correo no existe o la contraseña falla?**
+Para no permitir enumeración de cuentas: un atacante no puede saber qué correos están registrados. Además el throttle (5/min por correo+IP) frena la fuerza bruta.
+
+**¿Riesgos del token en `localStorage`?**
+Cualquier script inyectado (XSS) puede leerlo y robar la sesión. Mitigación: sanitizar contenido (comentarios), CSP, tokens revocables (`/me/tokens`, logout) y, a futuro, expiración del token.
+
+**¿Por qué el registro nunca crea admins?**
+Porque es público: si aceptara `role`, cualquiera se haría admin. `role` no es fillable y la Action asigna `estudiante` explícitamente; los admins solo nacen del seeder o de otro admin.
+
 **¿Qué problema tiene un contador global de likes?**
 No sabe quién dio like (se puede dar infinitos) y se desincroniza con concurrencia. La tabla pivote `likes` con PK compuesta `(user_id, proyecto_id)` garantiza 1 like por usuario y el total se obtiene con `withCount('likes')`.
 
