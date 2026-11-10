@@ -52,6 +52,59 @@ php artisan config:publish cors
 
 ---
 
+## Paso 2 — Modelo de datos: migraciones, modelos, relaciones, factories y seeders
+**Qué se hizo:** 8 migraciones en orden de dependencia (`materias` → `docentes` → `tecnologias` → `users` (role/programa/semestre) → `proyectos` → `proyecto_tecnologia` → `comentarios` → `likes`), enum `App\Enums\Role`, 6 modelos con relaciones en ambos lados, factories con correos `@unab.edu.co` y seeders de catálogos + admin inicial.
+
+**Diagrama ER (DBML para dbdiagram.io):**
+```dbml
+Table users { id bigint [pk]; name varchar; email varchar [unique]; password varchar; role varchar [note: 'estudiante|admin']; programa varchar; semestre smallint; email_verified_at timestamp; created_at timestamp; updated_at timestamp }
+Table materias { id bigint [pk]; codigo varchar [unique]; nombre varchar; semestre smallint }
+Table docentes { id bigint [pk]; nombre varchar; email varchar [unique] }
+Table tecnologias { id bigint [pk]; nombre varchar [unique] }
+Table proyectos { id bigint [pk]; user_id bigint [ref: > users.id]; materia_id bigint [ref: > materias.id]; docente_id bigint [ref: > docentes.id]; titulo varchar; slug varchar [unique]; contexto text; repositorio_url varchar; video_url varchar [null]; periodo varchar; created_at timestamp; updated_at timestamp; deleted_at timestamp }
+Table proyecto_tecnologia { proyecto_id bigint [ref: > proyectos.id]; tecnologia_id bigint [ref: > tecnologias.id]; indexes { (proyecto_id, tecnologia_id) [pk] } }
+Table comentarios { id bigint [pk]; proyecto_id bigint [ref: > proyectos.id]; user_id bigint [ref: > users.id]; contenido text; created_at timestamp; updated_at timestamp; deleted_at timestamp }
+Table likes { user_id bigint [ref: > users.id]; proyecto_id bigint [ref: > proyectos.id]; created_at timestamp; indexes { (user_id, proyecto_id) [pk] } }
+```
+
+**Relaciones Eloquent:**
+| Modelo | Relación |
+|---|---|
+| `User` | `proyectos()` hasMany · `comentarios()` hasMany · `likes()` belongsToMany Proyecto (tabla `likes`) |
+| `Proyecto` | `user()`, `materia()`, `docente()` belongsTo · `tecnologias()` belongsToMany · `comentarios()` hasMany · `likes()` belongsToMany User |
+| `Materia` / `Docente` | `proyectos()` hasMany |
+| `Tecnologia` | `proyectos()` belongsToMany |
+| `Comentario` | `proyecto()`, `user()` belongsTo |
+
+**Por qué:**
+- `likes` y `proyecto_tecnologia` con **PK compuesta**: la BD misma impide likes duplicados (no depende del código). Se descartó un contador `likes` en `proyectos` (se desincroniza y no sabe quién dio like).
+- `restrictOnDelete` hacia `materias`/`docentes`/`tecnologias`: no se puede borrar un catálogo en uso. `cascadeOnDelete` desde `users`/`proyectos` (pendiente de confirmar con el equipo, pregunta abierta 5).
+- `softDeletes` en `proyectos` y `comentarios`: el admin modera sin perder evidencia.
+- `role` como enum PHP (`Role::Estudiante`/`Role::Admin`) con cast en el modelo y `enum` en BD (PostgreSQL crea un `CHECK`): solo valores válidos en ambas capas. Valor por defecto `estudiante` en BD y en `$attributes`.
+- `role`, `user_id`, `proyecto_id` y `slug` **fuera de `$fillable`**: el autor sale del token y el rol solo lo cambia un admin/seeder.
+- `slug` lo genera el modelo (evento `creating`) a partir del título, único incluso contra proyectos borrados lógicamente (`withTrashed`).
+- Índices en `materias.semestre`, `proyectos.created_at`, `proyectos.periodo`, `likes.proyecto_id`, `proyecto_tecnologia.tecnologia_id` para los filtros y el orden "recientes/populares" de la Fase 5.
+- Admin inicial desde `ADMIN_EMAIL`/`ADMIN_PASSWORD` (vía `config/auth.php`, compatible con `config:cache`). Valida el dominio y en producción exige contraseña explícita. En local, si `ADMIN_PASSWORD` está vacío, usa `Admin12345*`.
+- Materias: plan de Ingeniería de Sistemas con componente de programación; **códigos referenciales** (validar con el pensum oficial). Docentes: solo el docente del curso es real; el resto son marcadores "(por definir)" para no inventar nombres de personas reales.
+- No se siembran proyectos: según el plan se crean por Postman.
+- **Preguntas abiertas no resueltas** (se dejó el valor por defecto del plan): sin rol `docente`, un autor por proyecto, sin `MustVerifyEmail`, publicación directa con moderación posterior, cascade al borrar usuario, sin `categoria`.
+
+**Comandos:**
+```bash
+php artisan make:model Materia -mfs   # ídem Docente, Tecnologia, Proyecto; Comentario -mf
+php artisan make:migration add_perfil_y_rol_to_users_table --table=users
+php artisan make:migration create_proyecto_tecnologia_table
+php artisan make:migration create_likes_table
+php artisan make:seeder AdminSeeder
+php artisan migrate:fresh --seed
+./vendor/bin/pest --filter=ModeloDatos
+```
+**Archivos:** `app/Enums/Role.php`, `app/Models/{User,Materia,Docente,Tecnologia,Proyecto,Comentario}.php`, `database/migrations/2026_11_10_0558*`, `database/factories/*`, `database/seeders/{Database,Materia,Docente,Tecnologia,Admin}Seeder.php`, `config/auth.php`, `.env.example`, `tests/Feature/ModeloDatosTest.php`.
+**Cómo probar:** `php artisan migrate:fresh --seed` → todas las migraciones `DONE`; `./vendor/bin/pest --filter=ModeloDatos` → 9 pruebas verdes (relaciones, slug, PK compuesta de likes, restrict, cascade, softDeletes, fillable).
+**Commit:** `feat: crear modelo de datos con migraciones, modelos y seeders`
+
+---
+
 ## Preguntas de sustentación
 
 ### Básicas
@@ -64,7 +117,25 @@ Guarda la configuración que cambia por entorno (credenciales de BD, APP_KEY, AP
 **¿Qué es Docker: imagen vs contenedor?**
 Una imagen es una plantilla inmutable (SO + dependencias, p. ej. `postgres:17-alpine`); un contenedor es una instancia en ejecución de esa imagen. Aquí PostgreSQL corre en un contenedor con un volumen (`pgdata`) para persistir datos.
 
+**¿Qué es una migración?**
+Un archivo PHP versionado que describe cambios al esquema (crear tabla, agregar columna) con `up()` y `down()`. Permite que todo el equipo y Azure tengan la misma estructura con `php artisan migrate`.
+
+**¿Qué es Eloquent?**
+El ORM de Laravel: cada tabla se representa con un modelo (`Proyecto`) y las relaciones (`belongsTo`, `hasMany`, `belongsToMany`) se navegan como propiedades (`$proyecto->user->email`).
+
 ### Avanzadas
+**¿Qué problema tiene un contador global de likes?**
+No sabe quién dio like (se puede dar infinitos) y se desincroniza con concurrencia. La tabla pivote `likes` con PK compuesta `(user_id, proyecto_id)` garantiza 1 like por usuario y el total se obtiene con `withCount('likes')`.
+
+**¿Por qué `user_id`/`role` no son fillable?**
+Con asignación masiva (`create($request->validated())`) un atacante podría enviar `"role":"admin"` o `"user_id":5`. Al excluirlos, se ignoran y se asignan solo desde el servidor (`$request->user()`, seeder o admin).
+
+**¿Por qué softDeletes?**
+El borrado lógico marca `deleted_at` en vez de eliminar la fila: el admin puede moderar y aún queda evidencia/auditoría, y se puede restaurar. Las consultas normales excluyen esos registros automáticamente.
+
+**¿Por qué `restrictOnDelete` en materias/docentes y `cascadeOnDelete` desde usuarios?**
+Un catálogo en uso no debe desaparecer (dejaría proyectos huérfanos); en cambio, los proyectos, comentarios y likes pertenecen al usuario y no tienen sentido sin él (decisión pendiente de confirmar).
+
 **¿Por qué versionar la API (`/api/v1`)?**
 Permite cambiar el contrato en una `v2` sin romper clientes existentes (frontend Lovable, servidor MCP). Los clientes migran a su ritmo.
 
