@@ -17,5 +17,9 @@ class DatabaseSeeder extends Seeder
             TecnologiaSeeder::class,
             AdminSeeder::class,
         ]);
+
+        if (app()->isLocal()) {
+            $this->call(DemoSeeder::class);
+        }
     }
 }
