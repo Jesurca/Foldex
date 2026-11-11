@@ -167,7 +167,7 @@ Pruebas automáticas: `./vendor/bin/pest` → 38 pruebas verdes.
 | GET | `/api/v1/materias` · `/docentes` · `/tecnologias` | público | 200 `{data: [...]}` (sin paginar) |
 | GET | `/api/v1/proyectos?q=&materia=&docente=&tecnologia=&semestre=&periodo=&orden=recientes\|populares&rango=diario\|semanal\|mensual\|anual\|historico&page=` | público | 200 paginado de 12 `{data, links, meta}` |
 | GET | `/api/v1/proyectos/{slug}` | público | 200 `{data}` · 404 si no existe o fue eliminado |
-| POST | `/api/v1/proyectos` | auth (`throttle:10,1`) | 201 `{data}` · 422 |
+| POST | `/api/v1/proyectos` (multipart si trae `portada`) | auth (`throttle:10,1`) | 201 `{data}` · 422 |
 | DELETE | `/api/v1/proyectos/{slug}` | dueño o admin (`ProyectoPolicy`) | 204 · 403 |
 | POST / DELETE | `/api/v1/proyectos/{slug}/like` | auth | 200 `{liked, likes_count}` |
 | GET | `/api/v1/proyectos/{slug}/comentarios` | público | 200 paginado de 10 |
@@ -227,7 +227,10 @@ routes/web.php                 ← cualquier ruta que no sea api/ devuelve la SP
 - **Detalle:** video incrustado solo de YouTube (`youtube-nocookie.com`) o Google Drive; cualquier otro enlace se muestra como link. Los comentarios se paginan con "Ver más". Los botones de borrar aparecen según `can.delete`.
 - **Publicar:** los campos y reglas son los de `StoreProyectoRequest`: selects de catálogo, tecnologías múltiples (máximo 10), periodo `AAAA-1|2` y video opcional. No se piden autor ni fecha. Los errores 422 aparecen debajo de cada campo.
 - **Registro:** pide lo que exige `RegisterRequest` (nombre, correo, contraseña y confirmación; programa y semestre son opcionales). El correo se normaliza (trim + minúsculas) y el dominio se valida también en el cliente. Se quitó el selector de rol de demostración.
-- **Imágenes:** el backend no guarda imágenes, así que la portada es una de 3 ilustraciones elegida de forma estable por `id`.
+- **Foto de portada:** al publicar se puede subir una foto (opcional). Se envía como `multipart/form-data` (`formularioProyecto()` en `servicios.ts`; `client.ts` no fija `Content-Type` cuando el body es `FormData`, para que el navegador ponga el `boundary`). Hay vista previa y se puede cambiar o quitar antes de publicar. Las tarjetas y el detalle usan `portada_url`; si es `null`, muestran una de las 3 ilustraciones elegida de forma estable por `id`.
+  - **Backend:** columna `proyectos.portada_path` (nullable). `StoreProyectoRequest` exige `image` + `mimes:jpg,jpeg,png,webp` (sin SVG, que puede llevar scripts), máximo 2 MB (el `upload_max_filesize` por defecto de PHP) y al menos 300 × 150 px. `PublicarProyecto` la guarda con `store('portadas', 'public')`: nombre aleatorio y extensión según el contenido, no según lo que mande el usuario. Si falla la transacción, borra el archivo. `ProyectoResource` expone `portada_url` (URL pública del disco `public`).
+  - **Pendiente:** al ser *soft delete*, borrar un proyecto no borra su foto. No se redimensiona en el servidor porque la extensión GD no está instalada.
+  - **Requisito:** `php artisan storage:link` (crea `public/storage`, ya ignorado en git). Sin ese enlace, las fotos dan 404.
 - **"Conecta con tu IA":** el servidor MCP aún no existe en el backend. La sección se dejó como estaba: copia el contexto público del proyecto e indica "Próximamente".
 
 **Comandos:**
@@ -236,6 +239,7 @@ npm install
 npm run build        # o `npm run dev` para desarrollo con recarga en caliente (junto a php artisan serve)
 npm test             # Vitest: cliente API, dominio, video y rutas
 npm run typecheck    # tsc --noEmit
+php artisan storage:link   # una vez: sirve las fotos de portada en /storage
 php artisan serve    # http://localhost:8000
 ```
 **Verificación hecha** (navegador headless y peticiones HTTP contra el servidor real):

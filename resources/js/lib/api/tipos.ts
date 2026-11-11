@@ -49,6 +49,8 @@ export interface Proyecto {
     contexto: string;
     repositorio_url: string;
     video_url: string | null;
+    /** null si el autor no subió foto de portada. */
+    portada_url: string | null;
     periodo: string;
     materia: Materia;
     docente: Docente;
@@ -132,6 +134,8 @@ export interface NuevoProyecto {
     repositorio_url: string;
     video_url: string | null;
     tecnologias: number[];
+    /** JPG, PNG o WebP de máximo 2 MB y al menos 300 × 150 px. */
+    portada: File | null;
 }
 
 /** Body de POST /register (RegisterRequest). */

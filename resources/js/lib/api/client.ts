@@ -82,8 +82,10 @@ export function construirUrl(ruta: string, query?: Query): string {
 export async function api<T>(ruta: string, opciones: OpcionesApi = {}): Promise<T> {
     const { method = 'GET', body, query, signal } = opciones;
     const actual = token.get();
+    // Con FormData (archivos) el navegador pone el Content-Type multipart con su `boundary`: no hay que fijarlo.
+    const esFormulario = typeof FormData !== 'undefined' && body instanceof FormData;
     const headers: Record<string, string> = { Accept: 'application/json' };
-    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (body !== undefined && !esFormulario) headers['Content-Type'] = 'application/json';
     if (actual) headers['Authorization'] = `Bearer ${actual}`;
 
     let respuesta: Response;
@@ -91,7 +93,7 @@ export async function api<T>(ruta: string, opciones: OpcionesApi = {}): Promise<
         respuesta = await fetch(construirUrl(ruta, query), {
             method,
             headers,
-            ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+            ...(body !== undefined ? { body: esFormulario ? body : JSON.stringify(body) } : {}),
             ...(signal ? { signal } : {}),
         });
     } catch (error) {

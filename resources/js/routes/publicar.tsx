@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useMemo, useState, type FormEvent } from 'react';
-import { ArrowLeft, CalendarDays, Loader2, Upload } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { ArrowLeft, CalendarDays, ImagePlus, Loader2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Cargando, ErrorEstado } from '@/components/Estados';
@@ -11,7 +11,7 @@ import { proyectos } from '@/lib/api/servicios';
 import type { NuevoProyecto } from '@/lib/api/tipos';
 import { useAuth } from '@/lib/auth';
 import { useDocentes, useMaterias, useTecnologias } from '@/lib/consultas';
-import { metadata } from '@/lib/formato';
+import { errorPortada, metadata, PORTADA_TIPOS } from '@/lib/formato';
 
 export const Route = createFileRoute('/publicar')({
     head: () => metadata('Publica tu proyecto', 'Comparte un proyecto académico con la comunidad de ingeniería.'),
@@ -60,6 +60,34 @@ function Formulario({ nombre, email }: { nombre: string; email: string }) {
     const opcionesPeriodo = useMemo(periodos, []);
     const [elegidas, setElegidas] = useState<number[]>([]);
     const [errores, setErrores] = useState<Errores>({});
+    const [portada, setPortada] = useState<File | null>(null);
+    const inputPortada = useRef<HTMLInputElement>(null);
+
+    // Vista previa local con un object URL; el mismo efecto que lo crea lo libera
+    // (así también funciona con el doble montaje de StrictMode).
+    const [vistaPrevia, setVistaPrevia] = useState<string | null>(null);
+    useEffect(() => {
+        if (!portada) {
+            setVistaPrevia(null);
+            return;
+        }
+        const url = URL.createObjectURL(portada);
+        setVistaPrevia(url);
+        return () => URL.revokeObjectURL(url);
+    }, [portada]);
+
+    const elegirPortada = (e: ChangeEvent<HTMLInputElement>) => {
+        const archivo = e.target.files?.[0];
+        e.target.value = ''; // permite volver a elegir el mismo archivo
+        if (!archivo) return;
+        const problema = errorPortada(archivo);
+        setErrores((prev) => ({ ...prev, portada: problema }));
+        if (!problema) setPortada(archivo);
+    };
+    const quitarPortada = () => {
+        setPortada(null);
+        setErrores((prev) => ({ ...prev, portada: undefined }));
+    };
 
     const publicar = useMutation({
         mutationFn: (datos: NuevoProyecto) => proyectos.publicar(datos),
@@ -101,6 +129,7 @@ function Formulario({ nombre, email }: { nombre: string; email: string }) {
             repositorio_url: valor('repositorio_url'),
             video_url: valor('video_url') || null,
             tecnologias: elegidas,
+            portada,
         });
     };
 
@@ -143,6 +172,45 @@ function Formulario({ nombre, email }: { nombre: string; email: string }) {
                     />
                 ) : (
                     <form className="mt-8 grid gap-5" onSubmit={enviar} noValidate>
+                        <div>
+                            <p className="form-label text-sm">
+                                Foto de portada <span className="font-normal text-muted-foreground">(opcional · JPG, PNG o WebP, máx. 2 MB)</span>
+                            </p>
+                            <input
+                                ref={inputPortada}
+                                id="portada"
+                                type="file"
+                                accept={PORTADA_TIPOS.join(',')}
+                                className="sr-only"
+                                aria-invalid={Boolean(errores['portada'])}
+                                aria-describedby={errores['portada'] ? 'error-portada' : undefined}
+                                onChange={elegirPortada}
+                            />
+                            {vistaPrevia ? (
+                                <div className="relative mt-2 overflow-hidden rounded-lg border">
+                                    <img src={vistaPrevia} alt="Vista previa de la portada" className="aspect-[1.85] w-full object-cover" />
+                                    <div className="absolute right-3 top-3 flex gap-2">
+                                        <Button type="button" size="sm" variant="secondary" onClick={() => inputPortada.current?.click()}>
+                                            <ImagePlus />
+                                            Cambiar
+                                        </Button>
+                                        <Button type="button" size="sm" variant="secondary" aria-label="Quitar foto de portada" onClick={quitarPortada}>
+                                            <X />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <label
+                                    htmlFor="portada"
+                                    className="mt-2 flex aspect-[1.85] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-sm text-muted-foreground transition-colors hover:border-primary hover:text-foreground"
+                                >
+                                    <ImagePlus className="size-7" />
+                                    <span className="font-semibold">Sube una foto de portada</span>
+                                    <span className="text-xs">Si no subes una, se usará una ilustración.</span>
+                                </label>
+                            )}
+                            {err('portada')}
+                        </div>
                         <label className="form-label">
                             Nombre del proyecto
                             <input {...campo('titulo')} required minLength={3} maxLength={150} className="field mt-2" placeholder="Dale un nombre a tu idea" />

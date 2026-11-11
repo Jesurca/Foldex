@@ -94,7 +94,7 @@ function Ficha({ p }: { p: Proyecto }) {
                                 />
                             </div>
                         ) : (
-                            <img src={portada(p.id)} alt={p.titulo} width={1024} height={768} className="max-h-96 w-full rounded-lg object-cover" />
+                            <img src={portada(p)} alt={p.titulo} width={1024} height={768} className="max-h-96 w-full rounded-lg object-cover" />
                         )}
                         <p className="section-eyebrow mt-7">
                             {p.materia.nombre.toUpperCase()} · SEMESTRE {p.materia.semestre}

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api, ApiError, construirUrl, EVENTO_SESION_EXPIRADA, token } from '@/lib/api/client';
-import { desenvolver, paginado } from '@/lib/api/servicios';
+import { desenvolver, formularioProyecto, paginado } from '@/lib/api/servicios';
 import { correoPermitido, normalizarCorreo } from '@/lib/auth';
-import { urlVideoEmbebido } from '@/lib/formato';
+import { errorPortada, portada, urlVideoEmbebido } from '@/lib/formato';
 
 function respuesta(status: number, cuerpo?: unknown) {
     return Promise.resolve(new Response(cuerpo === undefined ? null : JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } }));
@@ -26,6 +26,42 @@ describe('cliente API', () => {
 
         const [, init] = fetchMock.mock.calls[0]!;
         expect(init?.headers).toMatchObject({ Accept: 'application/json', Authorization: 'Bearer abc' });
+    });
+
+    it('envía FormData como multipart sin forzar Content-Type', async () => {
+        const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(() => respuesta(201, { data: { id: 1 } }));
+        const portada = new File(['x'], 'portada.png', { type: 'image/png' });
+        const cuerpo = formularioProyecto({
+            titulo: 'Campus',
+            contexto: 'Contexto de prueba suficientemente largo',
+            materia_id: 1,
+            docente_id: 2,
+            periodo: '2026-2',
+            repositorio_url: 'https://github.com/unab/campus',
+            video_url: null,
+            tecnologias: [3, 4],
+            portada,
+        });
+
+        await api('proyectos', { method: 'POST', body: cuerpo });
+
+        const [, init] = fetchMock.mock.calls[0]!;
+        expect(init?.body).toBe(cuerpo);
+        expect(init?.headers).not.toHaveProperty('Content-Type');
+        expect(cuerpo.getAll('tecnologias[]')).toEqual(['3', '4']);
+        expect(cuerpo.get('portada')).toBeInstanceOf(File);
+        expect(cuerpo.has('video_url')).toBe(false);
+    });
+
+    it('valida la portada en el navegador', () => {
+        expect(errorPortada(new File(['x'], 'a.png', { type: 'image/png' }))).toBeUndefined();
+        expect(errorPortada(new File(['x'], 'a.svg', { type: 'image/svg+xml' }))).toContain('JPG, PNG o WebP');
+        expect(errorPortada(new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'a.jpg', { type: 'image/jpeg' }))).toContain('2 MB');
+    });
+
+    it('usa la foto subida como portada y si no hay, una ilustración', () => {
+        expect(portada({ id: 1, portada_url: '/storage/portadas/x.png' })).toBe('/storage/portadas/x.png');
+        expect(portada({ id: 1, portada_url: null })).toBeTruthy();
     });
 
     it('convierte un 422 en ApiError con errores por campo', async () => {

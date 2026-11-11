@@ -34,6 +34,21 @@ export function paginado<T>(respuesta: Paginado<T> | T[] | { data: T[] }): Pagin
 
 const enc = encodeURIComponent;
 
+/** POST /proyectos va como multipart porque puede llevar la foto de portada. */
+export function formularioProyecto(datos: NuevoProyecto): FormData {
+    const f = new FormData();
+    f.append('titulo', datos.titulo);
+    f.append('contexto', datos.contexto);
+    f.append('materia_id', String(datos.materia_id));
+    f.append('docente_id', String(datos.docente_id));
+    f.append('periodo', datos.periodo);
+    f.append('repositorio_url', datos.repositorio_url);
+    if (datos.video_url) f.append('video_url', datos.video_url);
+    for (const id of datos.tecnologias) f.append('tecnologias[]', String(id));
+    if (datos.portada) f.append('portada', datos.portada);
+    return f;
+}
+
 export const auth = {
     login: (email: string, password: string) =>
         api<RespuestaSesion>('login', { method: 'POST', body: { email, password, device_name: 'web' } }),
@@ -54,7 +69,7 @@ export const proyectos = {
         paginado(await api<Paginado<Proyecto>>('proyectos', { query: { ...filtros } })),
     detalle: async (slug: string) => desenvolver(await api<{ data: Proyecto }>(`proyectos/${enc(slug)}`)),
     publicar: async (datos: NuevoProyecto) =>
-        desenvolver(await api<{ data: Proyecto }>('proyectos', { method: 'POST', body: datos })),
+        desenvolver(await api<{ data: Proyecto }>('proyectos', { method: 'POST', body: formularioProyecto(datos) })),
     eliminar: (slug: string) => api<void>(`proyectos/${enc(slug)}`, { method: 'DELETE' }),
 };
 

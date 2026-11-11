@@ -6,9 +6,19 @@ export { campus };
 
 const PORTADAS = [campus, health, robot] as const;
 
-/** El backend no guarda imágenes: la portada es ilustrativa y estable para cada proyecto. */
-export function portada(id: number): string {
-    return PORTADAS[Math.abs(id) % PORTADAS.length] ?? campus;
+/** Foto de portada subida por el autor; si no hay, una ilustración estable según el id. */
+export function portada(p: { id: number; portada_url: string | null }): string {
+    return p.portada_url ?? PORTADAS[Math.abs(p.id) % PORTADAS.length] ?? campus;
+}
+
+export const PORTADA_TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
+export const PORTADA_MAX_BYTES = 2 * 1024 * 1024;
+
+/** Validación previa en el navegador (el servidor vuelve a validar, incluidas las dimensiones). */
+export function errorPortada(archivo: File): string | undefined {
+    if (!PORTADA_TIPOS.includes(archivo.type)) return 'La portada debe ser una imagen JPG, PNG o WebP.';
+    if (archivo.size > PORTADA_MAX_BYTES) return 'La portada no puede pesar más de 2 MB.';
+    return undefined;
 }
 
 export function fecha(iso: string | null | undefined): string {

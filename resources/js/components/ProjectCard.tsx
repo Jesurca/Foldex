@@ -12,7 +12,7 @@ export function ProjectCard({ project: p }: { project: Proyecto }) {
         <article className="project-card group">
             <Link to="/proyectos/$id" params={{ id: p.slug }} className="relative block overflow-hidden">
                 <img
-                    src={portada(p.id)}
+                    src={portada(p)}
                     alt={p.titulo}
                     width={1024}
                     height={768}
