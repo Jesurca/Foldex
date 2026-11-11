@@ -6,7 +6,9 @@ use App\Models\Materia;
 use App\Models\Proyecto;
 use App\Models\Tecnologia;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 
 function datosProyecto(array $extra = []): array
@@ -21,6 +23,19 @@ function datosProyecto(array $extra = []): array
         'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         'tecnologias' => Tecnologia::factory()->count(2)->create()->pluck('id')->all(),
     ], $extra);
+}
+
+/** PNG real (gris) generado sin GD, que no está instalado; así `image` y `dimensions` lo leen de verdad. */
+function pngDePrueba(string $nombre, int $ancho, int $alto): UploadedFile
+{
+    $bloque = fn (string $tipo, string $datos) => pack('N', strlen($datos)).$tipo.$datos.pack('N', crc32($tipo.$datos));
+    $filas = str_repeat("\0".str_repeat("\x80", $ancho), $alto);
+    $png = "\x89PNG\r\n\x1a\n"
+        .$bloque('IHDR', pack('NNCCCCC', $ancho, $alto, 8, 0, 0, 0, 0))
+        .$bloque('IDAT', gzcompress($filas))
+        .$bloque('IEND', '');
+
+    return UploadedFile::fake()->createWithContent($nombre, $png);
 }
 
 describe('catálogos', function (): void {
@@ -167,8 +182,42 @@ describe('publicar proyectos', function (): void {
 
         $this->postJson('/api/v1/proyectos', datosProyecto(['video_url' => '']))
             ->assertCreated()
-            ->assertJsonPath('data.video_url', null);
+            ->assertJsonPath('data.video_url', null)
+            ->assertJsonPath('data.portada_url', null);
     });
+
+    it('guarda la foto de portada y devuelve su URL pública', function (): void {
+        Storage::fake('public');
+        Sanctum::actingAs(User::factory()->create());
+
+        // Como lo envía el navegador: multipart con todo como texto.
+        $datos = datosProyecto(['portada' => pngDePrueba('mi-portada.png', 800, 400)]);
+        $datos['tecnologias'] = array_map('strval', $datos['tecnologias']);
+
+        $respuesta = $this->withHeader('Accept', 'application/json')->post('/api/v1/proyectos', $datos)->assertCreated();
+
+        $ruta = Proyecto::query()->sole()->portada_path;
+        expect($ruta)->toStartWith('portadas/')->not->toContain('mi-portada')
+            ->and($respuesta->json('data.portada_url'))->toBe(Storage::disk('public')->url($ruta));
+        Storage::disk('public')->assertExists($ruta);
+    });
+
+    it('rechaza portadas que no son imágenes, pesadas o pequeñas', function (UploadedFile $archivo): void {
+        Storage::fake('public');
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->withHeader('Accept', 'application/json')
+            ->post('/api/v1/proyectos', datosProyecto(['portada' => $archivo]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('portada');
+
+        expect(Storage::disk('public')->allFiles())->toBeEmpty();
+    })->with([
+        'pdf' => fn () => UploadedFile::fake()->create('portada.pdf', 100, 'application/pdf'),
+        'svg' => fn () => UploadedFile::fake()->createWithContent('portada.svg', '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>'),
+        'más de 2 MB' => fn () => pngDePrueba('grande.png', 800, 400)->size(3000),
+        'muy pequeña' => fn () => pngDePrueba('mini.png', 100, 50),
+    ]);
 });
 
 describe('eliminar proyectos', function (): void {

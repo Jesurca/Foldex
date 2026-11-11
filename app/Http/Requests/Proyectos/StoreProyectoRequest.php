@@ -48,6 +48,8 @@ class StoreProyectoRequest extends FormRequest
             'video_url' => ['nullable', 'string', 'url:https', 'max:500'],
             'tecnologias' => ['required', 'array', 'min:1', 'max:10'],
             'tecnologias.*' => ['integer', 'distinct', 'exists:tecnologias,id'],
+            // 2 MB: el `upload_max_filesize` por defecto de PHP. `image` ya excluye SVG (puede llevar scripts).
+            'portada' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048', 'dimensions:min_width=300,min_height=150'],
         ];
     }
 
@@ -61,6 +63,11 @@ class StoreProyectoRequest extends FormRequest
             'tecnologias.required' => 'Selecciona al menos una tecnología.',
             'tecnologias.min' => 'Selecciona al menos una tecnología.',
             'tecnologias.max' => 'Selecciona como máximo 10 tecnologías.',
+            'portada.image' => 'La portada debe ser una imagen JPG, PNG o WebP.',
+            'portada.mimes' => 'La portada debe ser una imagen JPG, PNG o WebP.',
+            'portada.max' => 'La portada no puede pesar más de 2 MB.',
+            'portada.uploaded' => 'La portada no se pudo subir. Debe pesar menos de 2 MB.',
+            'portada.dimensions' => 'La portada debe medir al menos 300 × 150 píxeles.',
         ];
     }
 
@@ -74,6 +81,7 @@ class StoreProyectoRequest extends FormRequest
             'docente_id' => 'docente',
             'repositorio_url' => 'repositorio',
             'video_url' => 'video',
+            'portada' => 'foto de portada',
         ];
     }
 }

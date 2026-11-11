@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Models\Proyecto;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Contrato JSON de un proyecto. `liked` es null para visitantes anónimos;
@@ -26,6 +27,8 @@ class ProyectoResource extends JsonResource
             'contexto' => $this->contexto,
             'repositorio_url' => $this->repositorio_url,
             'video_url' => $this->video_url,
+            // null si el autor no subió foto: el frontend muestra una ilustración.
+            'portada_url' => $this->portada_path ? Storage::disk('public')->url($this->portada_path) : null,
             'periodo' => $this->periodo,
             'materia' => MateriaResource::make($this->whenLoaded('materia')),
             'docente' => DocenteResource::make($this->whenLoaded('docente')),
