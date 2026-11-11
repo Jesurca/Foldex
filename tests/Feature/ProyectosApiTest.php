@@ -78,10 +78,25 @@ describe('listado y detalle de proyectos', function (): void {
         $this->getJson('/api/v1/proyectos?orden=populares')->assertJsonPath('data.0.slug', $popular->slug);
     });
 
+    it('ordena por likes recibidos en el rango elegido', function (): void {
+        $historico = Proyecto::factory()->create();
+        $historico->likes()->attach(User::factory()->count(3)->create(), ['created_at' => now()->subMonths(2)]);
+        $semana = Proyecto::factory()->create(['created_at' => now()->subYear()]);
+        $semana->likes()->attach(User::factory()->count(2)->create(), ['created_at' => now()->subDays(3)]);
+        $hoy = Proyecto::factory()->create(['created_at' => now()->subYears(2)]);
+        $hoy->likes()->attach(User::factory()->create(), ['created_at' => now()->subHour()]);
+
+        $slugs = fn (string $rango) => collect($this->getJson("/api/v1/proyectos?rango={$rango}")->assertOk()->json('data'))->pluck('slug')->all();
+
+        expect($slugs('diario'))->toBe([$hoy->slug, $historico->slug, $semana->slug])
+            ->and($slugs('semanal'))->toBe([$semana->slug, $hoy->slug, $historico->slug])
+            ->and($slugs('anual'))->toBe([$historico->slug, $semana->slug, $hoy->slug]);
+    });
+
     it('rechaza filtros inválidos con 422', function (): void {
-        $this->getJson('/api/v1/proyectos?orden=raro&semestre=20')
+        $this->getJson('/api/v1/proyectos?orden=raro&semestre=20&rango=mensual')
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['orden', 'semestre']);
+            ->assertJsonValidationErrors(['orden', 'semestre', 'rango']);
     });
 
     it('muestra el detalle por slug y marca el like del usuario', function (): void {

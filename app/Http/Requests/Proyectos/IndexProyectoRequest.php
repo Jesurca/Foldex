@@ -23,6 +23,7 @@ class IndexProyectoRequest extends FormRequest
             'semestre' => ['nullable', 'integer', 'between:1,10'],
             'periodo' => ['nullable', 'string', 'regex:/^\d{4}-[12]$/'],
             'orden' => ['nullable', 'in:recientes,populares'],
+            'rango' => ['nullable', 'in:diario,semanal,anual'],
             'page' => ['nullable', 'integer', 'min:1'],
         ];
     }

@@ -86,7 +86,19 @@ class Proyecto extends Model
             ))
             ->when($filtros['periodo'] ?? null, fn (Builder $q, $p) => $q->where('periodo', $p));
 
-        if (($filtros['orden'] ?? 'recientes') === 'populares') {
+        // Ranking: likes recibidos en la ventana elegida (último día, semana o año).
+        $desde = match ($filtros['rango'] ?? null) {
+            'diario' => now()->subDay(),
+            'semanal' => now()->subWeek(),
+            'anual' => now()->subYear(),
+            default => null,
+        };
+
+        if ($desde) {
+            $query->withCount(['likes as likes_rango_count' => fn (Builder $l) => $l->where('likes.created_at', '>=', $desde)])
+                ->orderByDesc('likes_rango_count')
+                ->orderByDesc('likes_count');
+        } elseif (($filtros['orden'] ?? 'recientes') === 'populares') {
             $query->orderByDesc('likes_count');
         }
 
