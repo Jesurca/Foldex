@@ -60,7 +60,8 @@ describe('listado y detalle de proyectos', function (): void {
         $tecnologia = Tecnologia::factory()->create(['nombre' => 'Laravel']);
         $buscado = Proyecto::factory()->for($materia)->create(['titulo' => 'RoboFinder']);
         $buscado->tecnologias()->attach($tecnologia);
-        Proyecto::factory()->count(2)->create();
+        // Materia fija en otro semestre: si fuera aleatoria podría caer en el 4 y la prueba fallaría a veces.
+        Proyecto::factory()->count(2)->for(Materia::factory()->create(['semestre' => 1]))->create();
 
         foreach (['q=robo', "materia={$materia->id}", "tecnologia={$tecnologia->id}", 'semestre=4', 'q=laravel'] as $filtro) {
             $this->getJson("/api/v1/proyectos?{$filtro}")
@@ -79,6 +80,8 @@ describe('listado y detalle de proyectos', function (): void {
     });
 
     it('ordena por likes recibidos en el rango elegido', function (): void {
+        $antiguo = Proyecto::factory()->create(['created_at' => now()->subYears(3)]);
+        $antiguo->likes()->attach(User::factory()->count(4)->create(), ['created_at' => now()->subYears(2)]);
         $historico = Proyecto::factory()->create();
         $historico->likes()->attach(User::factory()->count(3)->create(), ['created_at' => now()->subMonths(2)]);
         $semana = Proyecto::factory()->create(['created_at' => now()->subYear()]);
@@ -88,13 +91,15 @@ describe('listado y detalle de proyectos', function (): void {
 
         $slugs = fn (string $rango) => collect($this->getJson("/api/v1/proyectos?rango={$rango}")->assertOk()->json('data'))->pluck('slug')->all();
 
-        expect($slugs('diario'))->toBe([$hoy->slug, $historico->slug, $semana->slug])
-            ->and($slugs('semanal'))->toBe([$semana->slug, $hoy->slug, $historico->slug])
-            ->and($slugs('anual'))->toBe([$historico->slug, $semana->slug, $hoy->slug]);
+        expect($slugs('diario'))->toBe([$hoy->slug, $antiguo->slug, $historico->slug, $semana->slug])
+            ->and($slugs('semanal'))->toBe([$semana->slug, $hoy->slug, $antiguo->slug, $historico->slug])
+            ->and($slugs('mensual'))->toBe([$semana->slug, $hoy->slug, $antiguo->slug, $historico->slug])
+            ->and($slugs('anual'))->toBe([$historico->slug, $semana->slug, $hoy->slug, $antiguo->slug])
+            ->and($slugs('historico'))->toBe([$antiguo->slug, $historico->slug, $semana->slug, $hoy->slug]);
     });
 
     it('rechaza filtros inválidos con 422', function (): void {
-        $this->getJson('/api/v1/proyectos?orden=raro&semestre=20&rango=mensual')
+        $this->getJson('/api/v1/proyectos?orden=raro&semestre=20&rango=siglo')
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['orden', 'semestre', 'rango']);
     });
