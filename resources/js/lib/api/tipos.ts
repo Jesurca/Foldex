@@ -115,8 +115,12 @@ export interface FiltrosProyectos {
     semestre?: number | undefined;
     periodo?: string | undefined;
     orden?: 'recientes' | 'populares' | undefined;
+    /** Ordena por likes recibidos en el último día, semana o año. */
+    rango?: RangoRanking | undefined;
     page?: number | undefined;
 }
+
+export type RangoRanking = 'diario' | 'semanal' | 'anual';
 
 /** Body de POST /proyectos (StoreProyectoRequest). */
 export interface NuevoProyecto {

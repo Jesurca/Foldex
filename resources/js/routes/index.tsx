@@ -7,11 +7,11 @@ import { Cargando, ErrorEstado, Paginacion, Vacio } from '@/components/Estados';
 import { ProjectCard } from '@/components/ProjectCard';
 import { ProjectShell } from '@/components/ProjectShell';
 import { proyectos } from '@/lib/api/servicios';
-import type { FiltrosProyectos } from '@/lib/api/tipos';
+import type { FiltrosProyectos, RangoRanking } from '@/lib/api/tipos';
 import { useDocentes, useMaterias, useTecnologias } from '@/lib/consultas';
 import { campus, metadata } from '@/lib/formato';
 
-interface BusquedaCatalogo extends FiltrosProyectos {
+interface BusquedaCatalogo extends Omit<FiltrosProyectos, 'orden'> {
     vista?: 'lista' | undefined;
 }
 
@@ -20,6 +20,14 @@ const entero = (v: unknown): number | undefined => {
     return Number.isInteger(n) && n > 0 ? n : undefined;
 };
 
+/** La portada es un ranking por likes; "semanal" es el rango por defecto y no se escribe en la URL. */
+const RANGO_POR_DEFECTO: RangoRanking = 'semanal';
+const RANGOS: { valor: RangoRanking; etiqueta: string }[] = [
+    { valor: 'diario', etiqueta: 'Diario' },
+    { valor: 'semanal', etiqueta: 'Semanal' },
+    { valor: 'anual', etiqueta: 'Anual' },
+];
+
 export const Route = createFileRoute('/')({
     validateSearch: (s: Record<string, unknown>): BusquedaCatalogo => ({
         q: typeof s['q'] === 'string' && s['q'].trim() ? s['q'].slice(0, 100) : undefined,
@@ -27,7 +35,7 @@ export const Route = createFileRoute('/')({
         docente: entero(s['docente']),
         tecnologia: entero(s['tecnologia']),
         semestre: entero(s['semestre']),
-        orden: s['orden'] === 'populares' ? 'populares' : undefined,
+        rango: s['rango'] === 'diario' || s['rango'] === 'anual' ? s['rango'] : undefined,
         page: entero(s['page']),
         vista: s['vista'] === 'lista' ? 'lista' : undefined,
     }),
@@ -38,7 +46,9 @@ export const Route = createFileRoute('/')({
 function Catalogo() {
     const busqueda = Route.useSearch();
     const navigate = useNavigate({ from: '/' });
-    const { vista, ...filtros } = busqueda;
+    const { vista, rango: rangoUrl, ...resto } = busqueda;
+    const rango = rangoUrl ?? RANGO_POR_DEFECTO;
+    const filtros: FiltrosProyectos = { ...resto, rango };
     const lista = vista === 'lista';
 
     const materias = useMaterias();
@@ -69,7 +79,7 @@ function Catalogo() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [texto]);
 
-    const [panel, setPanel] = useState(Boolean(busqueda.materia || busqueda.docente || busqueda.tecnologia));
+    const [panel, setPanel] = useState(Boolean(busqueda.materia || busqueda.docente || busqueda.tecnologia || busqueda.semestre));
     const semestres = useMemo(() => [...new Set((materias.data ?? []).map((m) => m.semestre))].sort((a, b) => a - b), [materias.data]);
     const hayFiltros = Boolean(busqueda.q || busqueda.materia || busqueda.docente || busqueda.tecnologia || busqueda.semestre);
     const datos = resultado.data;
@@ -114,8 +124,8 @@ function Catalogo() {
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                             <p className="section-eyebrow">LA BIBLIOTECA DE NUESTRA COMUNIDAD</p>
-                            <h2 className="mt-2 text-3xl font-bold">Descubre los proyectos</h2>
-                            <p className="mt-2 text-sm text-muted-foreground">Cada proyecto, una nueva forma de resolver el mundo.</p>
+                            <h2 className="mt-2 text-3xl font-bold">Los proyectos más valorados</h2>
+                            <p className="mt-2 text-sm text-muted-foreground">Los que más me gusta han recibido de la comunidad en el periodo que elijas.</p>
                         </div>
                         <Link to="/mi-espacio" className="mt-7 flex items-center gap-2 text-xs font-semibold">
                             Ver mi espacio <ArrowRight className="size-4" />
@@ -139,7 +149,18 @@ function Catalogo() {
                         </Button>
                     </div>
                     {panel && (
-                        <div className="mt-3 grid gap-3 text-sm sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+                        <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] lg:items-end">
+                            <label>
+                                Semestre
+                                <select className="field mt-1" value={busqueda.semestre ?? ''} onChange={(e) => cambiar({ semestre: entero(e.target.value) })}>
+                                    <option value="">Todos</option>
+                                    {semestres.map((s) => (
+                                        <option key={s} value={s}>
+                                            Semestre {s}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
                             <label>
                                 Materia
                                 <select className="field mt-1" value={busqueda.materia ?? ''} onChange={(e) => cambiar({ materia: entero(e.target.value) })}>
@@ -178,42 +199,31 @@ function Catalogo() {
                                 disabled={!hayFiltros}
                                 onClick={() => {
                                     setTexto('');
-                                    void navigate({ search: (prev) => ({ orden: prev.orden, vista: prev.vista }), replace: true });
+                                    void navigate({ search: (prev) => ({ rango: prev.rango, vista: prev.vista }), replace: true });
                                 }}
                             >
                                 Limpiar
                             </Button>
                         </div>
                     )}
-                    <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
-                        <Button variant={!busqueda.semestre ? 'default' : 'ghost'} className="h-9 shrink-0 rounded-full px-4 text-xs" onClick={() => cambiar({ semestre: undefined })}>
-                            Todos
-                        </Button>
-                        {semestres.map((s) => (
-                            <Button
-                                key={s}
-                                variant={busqueda.semestre === s ? 'default' : 'ghost'}
-                                className="h-9 shrink-0 rounded-full px-4 text-xs"
-                                onClick={() => cambiar({ semestre: s })}
-                            >
-                                Semestre {s}
-                            </Button>
-                        ))}
-                    </div>
-                    <div className="mb-5 mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-                        <span>
-                            <strong className="text-foreground">{datos?.meta.total ?? '—'}</strong> proyectos para descubrir
-                        </span>
+                    <div className="mb-5 mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+                        <div role="group" aria-label="Periodo del ranking" className="flex gap-2">
+                            {RANGOS.map((r) => (
+                                <Button
+                                    key={r.valor}
+                                    variant={rango === r.valor ? 'default' : 'ghost'}
+                                    aria-pressed={rango === r.valor}
+                                    className="h-9 shrink-0 rounded-full px-4 text-xs"
+                                    onClick={() => cambiar({ rango: r.valor === RANGO_POR_DEFECTO ? undefined : r.valor })}
+                                >
+                                    {r.etiqueta}
+                                </Button>
+                            ))}
+                        </div>
                         <div className="flex items-center gap-3">
-                            <select
-                                aria-label="Ordenar proyectos"
-                                className="bg-transparent text-xs text-foreground outline-none"
-                                value={busqueda.orden ?? 'recientes'}
-                                onChange={(e) => cambiar({ orden: e.target.value === 'populares' ? 'populares' : undefined })}
-                            >
-                                <option value="recientes">Más recientes</option>
-                                <option value="populares">Más populares</option>
-                            </select>
+                            <span>
+                                <strong className="text-foreground">{datos?.meta.total ?? '—'}</strong> proyectos
+                            </span>
                             <span className="h-5 border-l" />
                             <Button size="icon" variant={!lista ? 'secondary' : 'ghost'} aria-label="Vista cuadrícula" onClick={() => cambiar({ vista: undefined }, false)}>
                                 <LayoutGrid />
