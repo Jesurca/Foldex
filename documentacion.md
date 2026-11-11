@@ -17,7 +17,10 @@ config/auth.php            ← allowed_domain (ALLOWED_EMAIL_DOMAIN)
 config/cors.php            ← orígenes desde FRONTEND_URL
 database/migrations/ factories/ seeders/
 lang/es/                   ← mensajes de validación en español
+resources/js/              ← interfaz React (SPA) que consume /api/v1 — ver Paso 5
+resources/views/app.blade.php ← HTML base de la SPA
 routes/api.php             ← /api/v1/...
+routes/web.php             ← cualquier otra ruta devuelve la SPA
 tests/Feature/             ← pruebas Pest contra PostgreSQL
 docker-compose.yml         ← PostgreSQL local
 ```
@@ -155,6 +158,98 @@ Pruebas automáticas: `./vendor/bin/pest` → 38 pruebas verdes.
 
 ---
 
+## Paso 4 — API de proyectos: catálogos, publicaciones, likes, comentarios y moderación
+**Qué se hizo:** los endpoints que necesitaba el frontend y que aún no existían, con sus Resources, FormRequests y pruebas.
+
+**Endpoints nuevos:**
+| Método | Ruta | Acceso | Respuesta |
+|---|---|---|---|
+| GET | `/api/v1/materias` · `/docentes` · `/tecnologias` | público | 200 `{data: [...]}` (sin paginar) |
+| GET | `/api/v1/proyectos?q=&materia=&docente=&tecnologia=&semestre=&periodo=&orden=recientes\|populares&page=` | público | 200 paginado de 12 `{data, links, meta}` |
+| GET | `/api/v1/proyectos/{slug}` | público | 200 `{data}` · 404 si no existe o fue eliminado |
+| POST | `/api/v1/proyectos` | auth (`throttle:10,1`) | 201 `{data}` · 422 |
+| DELETE | `/api/v1/proyectos/{slug}` | dueño o admin (`ProyectoPolicy`) | 204 · 403 |
+| POST / DELETE | `/api/v1/proyectos/{slug}/like` | auth | 200 `{liked, likes_count}` |
+| GET | `/api/v1/proyectos/{slug}/comentarios` | público | 200 paginado de 10 |
+| POST | `/api/v1/proyectos/{slug}/comentarios` | auth (`throttle:20,1`) | 201 `{data}` · 422 |
+| DELETE | `/api/v1/comentarios/{id}` | autor o admin (`ComentarioPolicy`) | 204 · 403 |
+| GET | `/api/v1/me/proyectos` · `/me/likes` | auth | 200 paginado |
+| GET / DELETE | `/api/v1/admin/proyectos` · `/admin/proyectos/{slug}` | `role:admin` | 200 paginado · 204 |
+
+**Por qué:**
+- **Rutas por `slug`** (`getRouteKeyName()`): URLs legibles (`/proyectos/campus-connect`) y no se expone el id secuencial.
+- **`ProyectoResource`** devuelve `materia`, `docente`, `autor` (sin correo: `AutorResource`), `tecnologias`, `likes_count`, `comentarios_count`, `liked` (`null` si es anónimo) y `can.delete`. El frontend usa `can` solo para mostrar u ocultar botones; la API vuelve a validar con la Policy.
+- **Lectura pública con token opcional:** las rutas GET están fuera de `auth:sanctum`, pero `$request->user('sanctum')` reconoce el token si llega, para calcular `liked` y `can`.
+- **Sin N+1:** el scope `conDetalles()` carga relaciones, `withCount(['likes','comentarios'])` y `withExists('likes as liked_by_me')` en una sola consulta por relación.
+- **Filtros en SQL** (scope `filtrar()`): `ilike` sobre título, contexto, autor y tecnologías (escapando `%` y `_`), `whereHas` para tecnología y semestre, orden por `likes_count` o fecha. `IndexProyectoRequest` valida la query string (422 si llega `orden=raro`).
+- **Publicar** (`StoreProyectoRequest` + Action `PublicarProyecto`): el autor sale del token y el slug y la fecha los pone el sistema; si el body trae `user_id` o `slug`, se ignoran. Enlaces solo `https://`; periodo `AAAA-1|2`; de 1 a 10 tecnologías existentes y sin repetir. El proyecto y sus tecnologías se guardan en una transacción.
+- **Likes idempotentes:** `POST` usa `syncWithoutDetaching` y `DELETE` usa `detach`. Repetirlos no cambia el conteo, gracias a la PK `(user_id, proyecto_id)`.
+- **Datos de demostración** (`DemoSeeder`, solo con `APP_ENV=local`): 3 estudiantes (`sgomez`, `vtorres`, `dredondo` @unab.edu.co, contraseña `Estudiante123`) y 6 proyectos. Asigna el slug a mano porque `DatabaseSeeder` usa `WithoutModelEvents`.
+
+**Archivos:** `app/Http/Controllers/Api/V1/{CatalogoController,ProyectoController,LikeController,ComentarioController,MiEspacioController}.php`, `app/Http/Controllers/Api/V1/Admin/ProyectoController.php`, `app/Http/Requests/Proyectos/*`, `app/Http/Resources/{Proyecto,Comentario,Materia,Docente,Tecnologia,Autor}Resource.php`, `app/Actions/Proyectos/PublicarProyecto.php`, `app/Models/Proyecto.php`, `database/seeders/DemoSeeder.php`, `routes/api.php`, `tests/Feature/ProyectosApiTest.php`.
+**Pruebas:** `./vendor/bin/pest --testsuite=Feature` → 63 pruebas verdes (25 nuevas).
+**Commits:** `feat(api): catálogos, proyectos, likes, comentarios, mi espacio y moderación` · `feat(db): datos de demostración para entorno local`
+
+---
+
+## Paso 5 — Integración del frontend (Lovable) dentro de Laravel
+**Qué se hizo:** la interfaz exportada de Lovable ("Screen Faithful Sitecraft") se movió a `resources/js` y Laravel la sirve como SPA. Todos los datos simulados (`projects.ts`, `useDemo()`) se reemplazaron por llamadas reales a `/api/v1`. La carpeta `frontend/` ya no existe.
+
+**Arquitectura:**
+```
+resources/js/
+  app.tsx                 ← monta React, QueryClient y TanStack Router
+  routes/                 ← rutas por archivo (TanStack Router genera routeTree.gen.ts)
+    __root.tsx  index.tsx  proyectos.$id.tsx  publicar.tsx  mi-espacio.tsx  administracion.tsx
+  components/             ← ProjectShell (layout + modal de acceso), ProjectCard, Estados, ui/
+  lib/api/client.ts       ← fetch + Bearer + ApiError + mensajes en español
+  lib/api/tipos.ts        ← interfaces copiadas de los API Resources
+  lib/api/servicios.ts    ← un método por endpoint
+  lib/auth.tsx            ← AuthProvider / useAuth()
+  lib/consultas.ts        ← catálogos cacheados y like optimista
+  lib/formato.ts          ← fechas, portadas, video embebido
+  assets/                 ← 3 portadas ilustrativas
+resources/views/app.blade.php  ← HTML base con @vite
+routes/web.php                 ← cualquier ruta que no sea api/ devuelve la SPA
+```
+
+**Por qué:**
+- **Una sola app en vez de dos.** Se pidió que no quedara la carpeta `frontend/`. Por eso se quitaron TanStack Start (SSR), Nitro y la configuración y telemetría de Lovable, y se dejó una SPA compilada por el Vite de Laravel (`laravel-vite-plugin` + `@vitejs/plugin-react` + `@tanstack/router-plugin`). Con `php artisan serve` basta.
+- **Mismo origen, sin CORS.** La SPA y la API están en `http://localhost:8000`, así que el navegador no hace preflight. `config/cors.php` se mantiene limitado a `FRONTEND_URL` para clientes externos (otro frontend o herramientas), nunca con `*`.
+- **Token Bearer de Sanctum en `localStorage`** (clave `unab_token`), igual que lo usaría un cliente externo o el futuro MCP. `client.ts` agrega `Authorization`, convierte errores en `ApiError {status, message, errors}` y, ante un 401 con sesión, borra el token y emite `unab:sesion-expirada`. `AuthProvider` escucha ese evento y cierra la sesión.
+- **`routes/web.php`** usa `Route::view('/{any?}', 'app')` excluyendo `api/`, `up`, `build/` y `storage/`. Así un F5 en `/proyectos/campus-connect` funciona y los 404 de la API siguen siendo JSON.
+- **TanStack Query:** `useQuery` para leer y `useMutation` + `invalidateQueries` para escribir. Los catálogos tienen `staleTime: Infinity`. No se reintentan errores 4xx.
+- **Like optimista:** se actualizan al instante todas las listas y el detalle (`['proyectos', …]`). Luego se usa el `{liked, likes_count}` del servidor y, si falla, se revierte.
+- **Catálogo:** los filtros van en la URL (`validateSearch`: `q`, `materia`, `docente`, `tecnologia`, `semestre`, `orden`, `page`, `vista`). La búsqueda espera 400 ms (debounce). Los chips de categorías fijas se cambiaron por los semestres de las materias. Las estadísticas usan `meta.total` y el tamaño de los catálogos.
+- **Detalle:** video incrustado solo de YouTube (`youtube-nocookie.com`) o Google Drive; cualquier otro enlace se muestra como link. Los comentarios se paginan con "Ver más". Los botones de borrar aparecen según `can.delete`.
+- **Publicar:** los campos y reglas son los de `StoreProyectoRequest`: selects de catálogo, tecnologías múltiples (máximo 10), periodo `AAAA-1|2` y video opcional. No se piden autor ni fecha. Los errores 422 aparecen debajo de cada campo.
+- **Registro:** pide lo que exige `RegisterRequest` (nombre, correo, contraseña y confirmación; programa y semestre son opcionales). El correo se normaliza (trim + minúsculas) y el dominio se valida también en el cliente. Se quitó el selector de rol de demostración.
+- **Imágenes:** el backend no guarda imágenes, así que la portada es una de 3 ilustraciones elegida de forma estable por `id`.
+- **"Conecta con tu IA":** el servidor MCP aún no existe en el backend. La sección se dejó como estaba: copia el contexto público del proyecto e indica "Próximamente".
+
+**Comandos:**
+```bash
+npm install
+npm run build        # o `npm run dev` para desarrollo con recarga en caliente (junto a php artisan serve)
+npm test             # Vitest: cliente API, dominio, video y rutas
+npm run typecheck    # tsc --noEmit
+php artisan serve    # http://localhost:8000
+```
+**Verificación hecha** (navegador headless y peticiones HTTP contra el servidor real):
+1. Registro con `@gmail.com` → 422 "Solo se permiten correos institucionales @unab.edu.co".
+2. Registro con `@unab.edu.co` → 201, rol `estudiante`, correo en minúsculas.
+3. Publicar → aparece primero en el catálogo con la fecha del sistema (`publicado_en`).
+4. Like → `{"liked":true,"likes_count":1}`; el comentario se publica.
+5. Un estudiante recibe `can.delete=false` en proyectos ajenos y un `DELETE` responde 403.
+6. El admin recibe `can.delete=true` y `DELETE /admin/proyectos/{slug}` responde 204 (después el proyecto da 404).
+`npm test` → 15 pruebas verdes · `npx tsc --noEmit` sin errores · `pest` → 63 verdes.
+
+**Nota de Windows:** al probar con `curl` o PowerShell 5.1, los acentos escritos directamente en `-d` no se envían en UTF-8 y Laravel recibe el JSON vacío (422 con "obligatorio" en todo). Usa `--data-binary @archivo.json` o escapes `ó`. El navegador siempre envía UTF-8.
+
+**Commits:** `feat(front): integrar el frontend de Lovable en Laravel como SPA` · `feat(front): cliente API, tipos y servicios` · `feat(front): login, registro y sesión con Sanctum` · `feat(front): catálogo conectado a la API` · `feat(front): detalle, likes y comentarios` · `feat(front): publicar proyecto` · `feat(front): perfil con publicaciones y me gusta` · `feat(front): panel de administración` · `docs: integración del frontend con la API`
+
+---
+
 ## Preguntas de sustentación
 
 ### Básicas
@@ -221,3 +316,22 @@ El navegador bloquea peticiones `fetch` a un origen distinto salvo que el servid
 
 **¿Por qué las pruebas usan PostgreSQL y no SQLite en memoria?**
 SQLite es más rápido pero no soporta igual `ilike`, tipos ni restricciones; probar con el mismo motor de producción evita falsos positivos.
+
+### Integración del frontend
+**¿Qué es CORS y por qué aquí no hace falta para la SPA?**
+Es la regla del navegador que bloquea `fetch` hacia otro origen (esquema + dominio + puerto) salvo que el servidor lo permita con cabeceras `Access-Control-Allow-*`. Como Laravel sirve la SPA y la API desde el mismo origen (`localhost:8000`), no hay petición cruzada. `config/cors.php` queda para clientes externos y solo admite los orígenes de `FRONTEND_URL`, nunca `*`. CORS no protege la API de `curl` o Postman: solo controla qué páginas web pueden leer la respuesta desde el navegador de un usuario.
+
+**¿Token Bearer o cookies de sesión?**
+Con cookies (Sanctum SPA), el navegador envía la sesión sola. Eso exige CSRF y `supports_credentials`, y solo sirve para el mismo dominio o subdominios. Con Bearer, el cliente envía el token de forma explícita: funciona igual para la SPA, Postman, apps móviles y el futuro MCP, y no hay CSRF porque nada se envía automáticamente. A cambio, el token queda al alcance de JavaScript.
+
+**¿Qué riesgos tiene guardar el token en `localStorage`?**
+Cualquier script que logre ejecutarse en la página (XSS, dependencia comprometida) puede leerlo y robar la sesión hasta que se revoque. Mitigaciones aplicadas: React escapa todo el texto (no se usa `dangerouslySetInnerHTML`), los videos solo se incrustan desde YouTube/Drive validando el ID, los enlaces externos llevan `rel="noopener noreferrer"`, ante un 401 se borra el token y existen `logout` y `DELETE /me/tokens/{id}`. Pendientes: CSP y expiración de tokens.
+
+**¿Por qué una variable `VITE_*` no puede guardar secretos?**
+Vite reemplaza `import.meta.env.VITE_*` por su valor al compilar, y ese valor queda escrito en el JavaScript que descarga cualquier visitante. Solo sirve para configuración pública, como `VITE_API_URL`. Las claves privadas viven en el `.env` de Laravel, que nunca llega al navegador.
+
+**¿Por qué el frontend esconde botones con `can.delete` si la API ya valida?**
+Es solo experiencia de usuario: evita mostrar acciones que van a fallar. La seguridad está en el servidor (`Gate::authorize` con la Policy y `role:admin`), porque cualquiera puede llamar a la API saltándose la interfaz.
+
+**¿Qué es una actualización optimista y cuándo conviene?**
+Es cambiar la interfaz antes de que responda el servidor (el corazón se pinta al instante) y corregir con la respuesta real, o revertir si hay error. Conviene en acciones frecuentes, baratas y casi siempre exitosas, como un like. No conviene en operaciones críticas como publicar o borrar.
