@@ -6,6 +6,7 @@ use App\Models\Materia;
 use App\Models\Proyecto;
 use App\Models\Tecnologia;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 
 function datosProyecto(array $extra = []): array
@@ -212,6 +213,31 @@ describe('likes', function (): void {
         $this->postJson("/api/v1/proyectos/{$proyecto->slug}/like")->assertExactJson(['liked' => true, 'likes_count' => 1]);
         $this->deleteJson("/api/v1/proyectos/{$proyecto->slug}/like")->assertExactJson(['liked' => false, 'likes_count' => 0]);
         $this->deleteJson("/api/v1/proyectos/{$proyecto->slug}/like")->assertExactJson(['liked' => false, 'likes_count' => 0]);
+    });
+
+    it('guarda la hora del like y repetirlo no la cambia', function (): void {
+        $proyecto = Proyecto::factory()->create();
+        $usuario = User::factory()->create();
+        Sanctum::actingAs($usuario);
+
+        $this->travelTo('2026-11-10 08:30:00');
+        $this->postJson("/api/v1/proyectos/{$proyecto->slug}/like")->assertOk();
+        $this->travelTo('2026-11-11 09:00:00');
+        $this->postJson("/api/v1/proyectos/{$proyecto->slug}/like")->assertOk();
+
+        expect(DB::table('likes')->where('user_id', $usuario->id)->value('created_at'))->toStartWith('2026-11-10 08:30:00');
+    });
+
+    it('un like dado por la API cuenta en el ranking del día', function (): void {
+        $viejo = Proyecto::factory()->create();
+        $viejo->likes()->attach(User::factory()->count(2)->create(), ['created_at' => now()->subDays(3)]);
+        $nuevo = Proyecto::factory()->create(['created_at' => now()->subYear()]);
+
+        Sanctum::actingAs(User::factory()->create());
+        $this->postJson("/api/v1/proyectos/{$nuevo->slug}/like")->assertOk();
+
+        $this->getJson('/api/v1/proyectos?rango=diario')->assertJsonPath('data.0.slug', $nuevo->slug);
+        $this->getJson('/api/v1/proyectos?rango=semanal')->assertJsonPath('data.0.slug', $viejo->slug);
     });
 
     it('exige autenticación', function (): void {

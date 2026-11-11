@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Proyecto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * POST da like y DELETE lo quita. Ambos son idempotentes (repetirlos no suma ni resta de más)
@@ -15,7 +16,13 @@ class LikeController extends Controller
 {
     public function store(Request $request, Proyecto $proyecto): JsonResponse
     {
-        $proyecto->likes()->syncWithoutDetaching([$request->user()->id]);
+        // La hora del like la pone Laravel (UTC, la misma zona que usa el ranking) y no la sesión de
+        // PostgreSQL. `insertOrIgnore` + PK compuesta: repetir el like no lo duplica ni cambia su hora.
+        DB::table('likes')->insertOrIgnore([
+            'user_id' => $request->user()->id,
+            'proyecto_id' => $proyecto->id,
+            'created_at' => now(),
+        ]);
 
         return $this->estado($proyecto, true);
     }
