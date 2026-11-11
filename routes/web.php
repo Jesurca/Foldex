@@ -2,6 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// La interfaz es una SPA de React (resources/js). Laravel sirve el mismo HTML para
+// cualquier ruta que no sea de la API y TanStack Router decide qué pantalla mostrar.
+Route::view('/{any?}', 'app')->where('any', '^(?!api/|up$|build/|storage/).*$')->name('spa');
