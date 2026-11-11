@@ -1,0 +1,274 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { ArrowRight, ArrowUpRight, BookOpen, Code2, FolderGit2, LayoutGrid, List, Search, SlidersHorizontal } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Cargando, ErrorEstado, Paginacion, Vacio } from '@/components/Estados';
+import { ProjectCard } from '@/components/ProjectCard';
+import { ProjectShell } from '@/components/ProjectShell';
+import { proyectos } from '@/lib/api/servicios';
+import type { FiltrosProyectos } from '@/lib/api/tipos';
+import { useDocentes, useMaterias, useTecnologias } from '@/lib/consultas';
+import { campus, metadata } from '@/lib/formato';
+
+interface BusquedaCatalogo extends FiltrosProyectos {
+    vista?: 'lista' | undefined;
+}
+
+const entero = (v: unknown): number | undefined => {
+    const n = Number(v);
+    return Number.isInteger(n) && n > 0 ? n : undefined;
+};
+
+export const Route = createFileRoute('/')({
+    validateSearch: (s: Record<string, unknown>): BusquedaCatalogo => ({
+        q: typeof s['q'] === 'string' && s['q'].trim() ? s['q'].slice(0, 100) : undefined,
+        materia: entero(s['materia']),
+        docente: entero(s['docente']),
+        tecnologia: entero(s['tecnologia']),
+        semestre: entero(s['semestre']),
+        orden: s['orden'] === 'populares' ? 'populares' : undefined,
+        page: entero(s['page']),
+        vista: s['vista'] === 'lista' ? 'lista' : undefined,
+    }),
+    head: () => metadata('Explora el talento de nuestra comunidad', 'Biblioteca académica de proyectos de Ingeniería de Sistemas de la UNAB.'),
+    component: Catalogo,
+});
+
+function Catalogo() {
+    const busqueda = Route.useSearch();
+    const navigate = useNavigate({ from: '/' });
+    const { vista, ...filtros } = busqueda;
+    const lista = vista === 'lista';
+
+    const materias = useMaterias();
+    const docentes = useDocentes();
+    const tecnologias = useTecnologias();
+
+    const resultado = useQuery({
+        queryKey: ['proyectos', 'lista', filtros],
+        queryFn: () => proyectos.listar(filtros),
+        placeholderData: keepPreviousData,
+    });
+    const totalGeneral = useQuery({
+        queryKey: ['proyectos', 'lista', {}],
+        queryFn: () => proyectos.listar({}),
+    });
+
+    const cambiar = (cambios: Partial<BusquedaCatalogo>, reiniciarPagina = true) =>
+        void navigate({ search: (prev) => ({ ...prev, ...cambios, ...(reiniciarPagina ? { page: undefined } : {}) }), replace: true });
+
+    // Búsqueda con debounce de 400 ms: el input es local y la URL se actualiza al dejar de escribir.
+    const [texto, setTexto] = useState(busqueda.q ?? '');
+    useEffect(() => setTexto(busqueda.q ?? ''), [busqueda.q]);
+    useEffect(() => {
+        const limpio = texto.trim();
+        if (limpio === (busqueda.q ?? '')) return;
+        const t = setTimeout(() => cambiar({ q: limpio || undefined }), 400);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [texto]);
+
+    const [panel, setPanel] = useState(Boolean(busqueda.materia || busqueda.docente || busqueda.tecnologia));
+    const semestres = useMemo(() => [...new Set((materias.data ?? []).map((m) => m.semestre))].sort((a, b) => a - b), [materias.data]);
+    const hayFiltros = Boolean(busqueda.q || busqueda.materia || busqueda.docente || busqueda.tecnologia || busqueda.semestre);
+    const datos = resultado.data;
+
+    return (
+        <ProjectShell>
+            <main>
+                <section className="site-width pt-8">
+                    <div className="catalog-hero">
+                        <img src={campus} alt="Campus universitario ilustrativo" width={1536} height={1024} className="hero-photo" />
+                        <div className="hero-shade" />
+                        <div className="relative z-10 max-w-xl p-7 sm:p-10 lg:p-12">
+                            <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest">
+                                <span className="h-1.5 w-1.5 rounded-full bg-primary" /> CONOCIMIENTO QUE SE COMPARTE
+                            </p>
+                            <h1 className="text-4xl font-bold leading-[1.12] sm:text-5xl">
+                                Proyectos UNAB
+                                <span className="mt-2 block text-3xl font-normal sm:text-4xl">
+                                    Ideas de aquí.
+                                    <br />
+                                    Impacto en todas partes.
+                                </span>
+                            </h1>
+                            <p className="mt-5 max-w-sm text-sm leading-6 opacity-85">
+                                Explora lo que estamos creando en Ingeniería de Sistemas. Aprende, conecta y haz parte de la próxima gran idea.
+                            </p>
+                            <Button asChild className="mt-7">
+                                <Link to="/publicar">
+                                    Comparte tu proyecto <ArrowUpRight />
+                                </Link>
+                            </Button>
+                        </div>
+                        <span className="absolute bottom-5 right-6 z-10 hidden text-[10px] opacity-80 sm:block">COMUNIDAD · INGENIERÍA · INNOVACIÓN</span>
+                    </div>
+                    <div className="grid grid-cols-3 border-b py-6">
+                        <Stat icon={<FolderGit2 />} value={totalGeneral.data?.meta.total} label="Proyectos compartidos" />
+                        <Stat icon={<BookOpen />} value={materias.data?.length} label="Materias del programa" />
+                        <Stat icon={<Code2 />} value={tecnologias.data?.length} label="Tecnologías en el catálogo" />
+                    </div>
+                </section>
+                <section className="site-width pt-9">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <p className="section-eyebrow">LA BIBLIOTECA DE NUESTRA COMUNIDAD</p>
+                            <h2 className="mt-2 text-3xl font-bold">Descubre los proyectos</h2>
+                            <p className="mt-2 text-sm text-muted-foreground">Cada proyecto, una nueva forma de resolver el mundo.</p>
+                        </div>
+                        <Link to="/mi-espacio" className="mt-7 flex items-center gap-2 text-xs font-semibold">
+                            Ver mi espacio <ArrowRight className="size-4" />
+                        </Link>
+                    </div>
+                    <div className="mt-6 flex flex-wrap gap-3">
+                        <div className="relative min-w-48 flex-1">
+                            <Search className="absolute left-4 top-3.5 size-4 text-muted-foreground" />
+                            <input
+                                aria-label="Buscar proyectos"
+                                placeholder="Busca por proyecto, tecnología o estudiante..."
+                                value={texto}
+                                maxLength={100}
+                                onChange={(e) => setTexto(e.target.value)}
+                                className="field pl-11"
+                            />
+                        </div>
+                        <Button variant="outline" className="h-11" onClick={() => setPanel(!panel)} aria-expanded={panel}>
+                            <SlidersHorizontal />
+                            Filtros
+                        </Button>
+                    </div>
+                    {panel && (
+                        <div className="mt-3 grid gap-3 text-sm sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+                            <label>
+                                Materia
+                                <select className="field mt-1" value={busqueda.materia ?? ''} onChange={(e) => cambiar({ materia: entero(e.target.value) })}>
+                                    <option value="">Todas</option>
+                                    {materias.data?.map((m) => (
+                                        <option key={m.id} value={m.id}>
+                                            {m.nombre}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                            <label>
+                                Docente
+                                <select className="field mt-1" value={busqueda.docente ?? ''} onChange={(e) => cambiar({ docente: entero(e.target.value) })}>
+                                    <option value="">Todos</option>
+                                    {docentes.data?.map((d) => (
+                                        <option key={d.id} value={d.id}>
+                                            {d.nombre}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                            <label>
+                                Tecnología
+                                <select className="field mt-1" value={busqueda.tecnologia ?? ''} onChange={(e) => cambiar({ tecnologia: entero(e.target.value) })}>
+                                    <option value="">Todas</option>
+                                    {tecnologias.data?.map((t) => (
+                                        <option key={t.id} value={t.id}>
+                                            {t.nombre}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                            <Button
+                                variant="ghost"
+                                disabled={!hayFiltros}
+                                onClick={() => {
+                                    setTexto('');
+                                    void navigate({ search: (prev) => ({ orden: prev.orden, vista: prev.vista }), replace: true });
+                                }}
+                            >
+                                Limpiar
+                            </Button>
+                        </div>
+                    )}
+                    <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
+                        <Button variant={!busqueda.semestre ? 'default' : 'ghost'} className="h-9 shrink-0 rounded-full px-4 text-xs" onClick={() => cambiar({ semestre: undefined })}>
+                            Todos
+                        </Button>
+                        {semestres.map((s) => (
+                            <Button
+                                key={s}
+                                variant={busqueda.semestre === s ? 'default' : 'ghost'}
+                                className="h-9 shrink-0 rounded-full px-4 text-xs"
+                                onClick={() => cambiar({ semestre: s })}
+                            >
+                                Semestre {s}
+                            </Button>
+                        ))}
+                    </div>
+                    <div className="mb-5 mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+                        <span>
+                            <strong className="text-foreground">{datos?.meta.total ?? '—'}</strong> proyectos para descubrir
+                        </span>
+                        <div className="flex items-center gap-3">
+                            <select
+                                aria-label="Ordenar proyectos"
+                                className="bg-transparent text-xs text-foreground outline-none"
+                                value={busqueda.orden ?? 'recientes'}
+                                onChange={(e) => cambiar({ orden: e.target.value === 'populares' ? 'populares' : undefined })}
+                            >
+                                <option value="recientes">Más recientes</option>
+                                <option value="populares">Más populares</option>
+                            </select>
+                            <span className="h-5 border-l" />
+                            <Button size="icon" variant={!lista ? 'secondary' : 'ghost'} aria-label="Vista cuadrícula" onClick={() => cambiar({ vista: undefined }, false)}>
+                                <LayoutGrid />
+                            </Button>
+                            <Button size="icon" variant={lista ? 'secondary' : 'ghost'} aria-label="Vista lista" onClick={() => cambiar({ vista: 'lista' }, false)}>
+                                <List />
+                            </Button>
+                        </div>
+                    </div>
+                    {resultado.isPending ? (
+                        <Cargando texto="Cargando proyectos…" />
+                    ) : resultado.isError ? (
+                        <ErrorEstado error={resultado.error} reintentar={() => void resultado.refetch()} />
+                    ) : datos && datos.data.length ? (
+                        <>
+                            <div className={`${lista ? 'grid gap-5 md:grid-cols-2' : 'grid gap-6 sm:grid-cols-2 lg:grid-cols-3'} ${resultado.isPlaceholderData ? 'opacity-60' : ''}`}>
+                                {datos.data.map((p) => (
+                                    <ProjectCard key={p.id} project={p} />
+                                ))}
+                            </div>
+                            <Paginacion
+                                meta={datos.meta}
+                                alCambiar={(page) => {
+                                    cambiar({ page: page > 1 ? page : undefined }, false);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                            />
+                        </>
+                    ) : (
+                        <Vacio>{hayFiltros ? 'No encontramos proyectos con esos filtros.' : 'Aún no hay proyectos publicados. ¡Sé el primero!'}</Vacio>
+                    )}
+                    <div className="community-band mt-12 flex flex-wrap items-center justify-between gap-6 px-7 py-8">
+                        <div>
+                            <p className="section-eyebrow">EL SIGUIENTE PROYECTO PUEDE SER EL TUYO</p>
+                            <h2 className="mt-2 text-2xl font-bold">Lo que creas merece ser compartido.</h2>
+                        </div>
+                        <Button asChild variant="outline">
+                            <Link to="/publicar">
+                                Publicar mi proyecto
+                                <ArrowUpRight />
+                            </Link>
+                        </Button>
+                    </div>
+                </section>
+            </main>
+        </ProjectShell>
+    );
+}
+
+function Stat({ icon, value, label }: { icon: ReactNode; value: number | undefined; label: string }) {
+    return (
+        <div className="flex flex-col items-center gap-2 border-r last:border-r-0 sm:flex-row sm:justify-center sm:gap-3">
+            <span className="text-primary [&_svg]:size-5">{icon}</span>
+            <span className="text-2xl font-bold">{value === undefined ? '—' : String(value).padStart(2, '0')}</span>
+            <span className="max-w-24 text-center text-[10px] leading-4 text-muted-foreground sm:text-left sm:text-xs">{label}</span>
+        </div>
+    );
+}
