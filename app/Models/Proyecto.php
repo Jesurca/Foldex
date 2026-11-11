@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\ProyectoFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,6 +35,62 @@ class Proyecto extends Model
         static::creating(function (Proyecto $proyecto): void {
             $proyecto->slug ??= static::slugUnico($proyecto->titulo);
         });
+    }
+
+    /** Las rutas usan el slug (`/proyectos/campus-connect`) en vez del id. */
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    /**
+     * Carga lo que necesita `ProyectoResource`: relaciones, contadores y si el
+     * usuario actual ya dio like (una sola consulta extra, sin N+1).
+     *
+     * @param  Builder<Proyecto>  $query
+     */
+    public function scopeConDetalles(Builder $query, ?User $usuario): void
+    {
+        $query->with(['user', 'materia', 'docente', 'tecnologias'])
+            ->withCount(['likes', 'comentarios'])
+            ->when($usuario, fn (Builder $q) => $q->withExists([
+                'likes as liked_by_me' => fn (Builder $l) => $l->where('users.id', $usuario->id),
+            ]));
+    }
+
+    /**
+     * Filtros del catálogo. Todos se aplican en SQL.
+     *
+     * @param  Builder<Proyecto>  $query
+     * @param  array<string, mixed>  $filtros
+     */
+    public function scopeFiltrar(Builder $query, array $filtros): void
+    {
+        $texto = trim((string) ($filtros['q'] ?? ''));
+
+        $query
+            ->when($texto !== '', fn (Builder $q) => $q->where(function (Builder $w) use ($texto): void {
+                $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $texto).'%';
+                $w->where('titulo', 'ilike', $like)
+                    ->orWhere('contexto', 'ilike', $like)
+                    ->orWhereHas('user', fn (Builder $u) => $u->where('name', 'ilike', $like))
+                    ->orWhereHas('tecnologias', fn (Builder $t) => $t->where('nombre', 'ilike', $like));
+            }))
+            ->when($filtros['materia'] ?? null, fn (Builder $q, $id) => $q->where('materia_id', $id))
+            ->when($filtros['docente'] ?? null, fn (Builder $q, $id) => $q->where('docente_id', $id))
+            ->when($filtros['tecnologia'] ?? null, fn (Builder $q, $id) => $q->whereHas(
+                'tecnologias', fn (Builder $t) => $t->where('tecnologias.id', $id)
+            ))
+            ->when($filtros['semestre'] ?? null, fn (Builder $q, $s) => $q->whereHas(
+                'materia', fn (Builder $m) => $m->where('semestre', $s)
+            ))
+            ->when($filtros['periodo'] ?? null, fn (Builder $q, $p) => $q->where('periodo', $p));
+
+        if (($filtros['orden'] ?? 'recientes') === 'populares') {
+            $query->orderByDesc('likes_count');
+        }
+
+        $query->latest()->orderByDesc('id');
     }
 
     public static function slugUnico(string $titulo): string
