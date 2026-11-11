@@ -25,8 +25,11 @@ const RANGO_POR_DEFECTO: RangoRanking = 'semanal';
 const RANGOS: { valor: RangoRanking; etiqueta: string }[] = [
     { valor: 'diario', etiqueta: 'Diario' },
     { valor: 'semanal', etiqueta: 'Semanal' },
+    { valor: 'mensual', etiqueta: 'Mensual' },
     { valor: 'anual', etiqueta: 'Anual' },
+    { valor: 'historico', etiqueta: 'De todos los tiempos' },
 ];
+const esRango = (v: unknown): v is RangoRanking => RANGOS.some((r) => r.valor === v);
 
 export const Route = createFileRoute('/')({
     validateSearch: (s: Record<string, unknown>): BusquedaCatalogo => ({
@@ -35,7 +38,7 @@ export const Route = createFileRoute('/')({
         docente: entero(s['docente']),
         tecnologia: entero(s['tecnologia']),
         semestre: entero(s['semestre']),
-        rango: s['rango'] === 'diario' || s['rango'] === 'anual' ? s['rango'] : undefined,
+        rango: esRango(s['rango']) && s['rango'] !== RANGO_POR_DEFECTO ? s['rango'] : undefined,
         page: entero(s['page']),
         vista: s['vista'] === 'lista' ? 'lista' : undefined,
     }),
@@ -65,8 +68,13 @@ function Catalogo() {
         queryFn: () => proyectos.listar({}),
     });
 
+    // `resetScroll: false`: filtrar no debe mandar al usuario al inicio de la página (el router lo hace por defecto).
     const cambiar = (cambios: Partial<BusquedaCatalogo>, reiniciarPagina = true) =>
-        void navigate({ search: (prev) => ({ ...prev, ...cambios, ...(reiniciarPagina ? { page: undefined } : {}) }), replace: true });
+        void navigate({
+            search: (prev) => ({ ...prev, ...cambios, ...(reiniciarPagina ? { page: undefined } : {}) }),
+            replace: true,
+            resetScroll: false,
+        });
 
     // Búsqueda con debounce de 400 ms: el input es local y la URL se actualiza al dejar de escribir.
     const [texto, setTexto] = useState(busqueda.q ?? '');
@@ -120,7 +128,7 @@ function Catalogo() {
                         <Stat icon={<Code2 />} value={tecnologias.data?.length} label="Tecnologías en el catálogo" />
                     </div>
                 </section>
-                <section className="site-width pt-9">
+                <section id="ranking" className="site-width scroll-mt-4 pt-9">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                             <p className="section-eyebrow">LA BIBLIOTECA DE NUESTRA COMUNIDAD</p>
@@ -199,7 +207,7 @@ function Catalogo() {
                                 disabled={!hayFiltros}
                                 onClick={() => {
                                     setTexto('');
-                                    void navigate({ search: (prev) => ({ rango: prev.rango, vista: prev.vista }), replace: true });
+                                    void navigate({ search: (prev) => ({ rango: prev.rango, vista: prev.vista }), replace: true, resetScroll: false });
                                 }}
                             >
                                 Limpiar
@@ -207,7 +215,7 @@ function Catalogo() {
                         </div>
                     )}
                     <div className="mb-5 mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-                        <div role="group" aria-label="Periodo del ranking" className="flex gap-2">
+                        <div role="group" aria-label="Periodo del ranking" className="flex gap-2 overflow-x-auto pb-1">
                             {RANGOS.map((r) => (
                                 <Button
                                     key={r.valor}
@@ -248,7 +256,7 @@ function Catalogo() {
                                 meta={datos.meta}
                                 alCambiar={(page) => {
                                     cambiar({ page: page > 1 ? page : undefined }, false);
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    document.getElementById('ranking')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
                             />
                         </>
