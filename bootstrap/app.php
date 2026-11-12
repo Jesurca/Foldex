@@ -10,16 +10,25 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-return Application::configure(basePath: dirname(__DIR__))
+/*
+| Arranque de Laravel. El código está separado en dos carpetas del mismo proyecto:
+|   backend/  → app, config, database, lang y routes (Laravel)
+|   frontend/ → js, css, views y contexto_img (React + Vite)
+| Por eso aquí se le indica a Laravel dónde está cada cosa (ver el final del archivo).
+*/
+$app = Application::configure(basePath: dirname(__DIR__))
+    // Rutas: web (SPA), api (/api/v1), consola y MCP (/mcp/proyectos, lo carga laravel/mcp desde routes/ai.php).
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
-        commands: __DIR__.'/../routes/console.php',
+        web: __DIR__.'/../backend/routes/web.php',
+        api: __DIR__.'/../backend/routes/api.php',
+        commands: __DIR__.'/../backend/routes/console.php',
         health: '/up',
+        then: fn () => Route::group([], __DIR__.'/../backend/routes/ai.php'),
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(prepend: [ForzarRespuestaJson::class]);
@@ -68,3 +77,11 @@ return Application::configure(basePath: dirname(__DIR__))
             ? response()->json(['message' => 'Demasiadas solicitudes. Intenta de nuevo más tarde.'], 429, $e->getHeaders())
             : null);
     })->create();
+
+// Carpetas del backend fuera de la raíz (composer.json apunta App\ y Database\ a las mismas rutas).
+$app->useAppPath($app->basePath('backend/app'));
+$app->useConfigPath($app->basePath('backend/config'));
+$app->useDatabasePath($app->basePath('backend/database'));
+$app->useLangPath($app->basePath('backend/lang'));
+
+return $app;

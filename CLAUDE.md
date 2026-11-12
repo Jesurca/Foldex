@@ -48,7 +48,8 @@ Boost replaces these bootstrap instructions with guidelines tailored to the appl
 
 # Proyecto: Repositorio de Proyectos UNAB
 
-- **Frontend:** vive en este repo, en `resources/js` (React 19 + TanStack Router/Query + Tailwind v4). Es una SPA servida por Laravel (`resources/views/app.blade.php`, ruta comodín en `routes/web.php`) que consume `/api/v1` con token Bearer de Sanctum, desde el mismo origen (sin CORS). Vino de Lovable, pero **los cambios se hacen aquí, no en Lovable**.
-- **Contrato:** manda el backend. Los tipos del frontend (`resources/js/lib/api/tipos.ts`) se copian de los API Resources; si cambias un Resource, actualiza los tipos.
+- **Frontend:** vive en este repo, en `frontend/js` (React 19 + TanStack Router/Query + Tailwind v4). Es una SPA servida por Laravel (`frontend/views/app.blade.php`, ruta comodín en `backend/routes/web.php`) que consume `/api/v1` con token Bearer de Sanctum, desde el mismo origen (sin CORS). Vino de Lovable, pero **los cambios se hacen aquí, no en Lovable**.
+- **Estructura:** `backend/` (app, config, database, lang, routes — Laravel) y `frontend/` (js, css, views, contexto_img — React/Vite) en el mismo proyecto; `bootstrap/app.php` y `composer.json` apuntan a esas carpetas. `tests/` (Pest) sigue en la raíz porque Pest la busca ahí.
+- **Contrato:** manda el backend. Los tipos del frontend (`frontend/js/lib/api/tipos.ts`) se copian de los API Resources; si cambias un Resource, actualiza los tipos.
 - **Convenciones:** commits pequeños en español (Conventional Commits), `documentacion.md` actualizado en cada paso, nunca subir `.env`.
 - **Verificar:** `./vendor/bin/pest --testsuite=Feature`, `npm test`, `npm run typecheck`, `npm run build`.

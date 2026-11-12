@@ -3,7 +3,7 @@
 Aplicación donde los estudiantes de Ingeniería de Sistemas de la UNAB publican los proyectos de programación de sus materias. Solo se aceptan correos `@unab.edu.co`.
 
 - **API REST**: Laravel 13 + PostgreSQL + Sanctum (token Bearer), en `/api/v1`.
-- **Interfaz web**: React 19 + TanStack Router/Query + Tailwind v4, en `resources/js`, servida por Laravel como SPA (mismo origen que la API).
+- **Interfaz web**: React 19 + TanStack Router/Query + Tailwind v4, en `frontend/js`, servida por Laravel como SPA (mismo origen que la API).
 
 ## Requisitos
 - PHP 8.3+ con extensiones `pdo_pgsql`, `pgsql`, `mbstring`, `openssl`, `intl`, `zip`

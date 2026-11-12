@@ -1,5 +1,5 @@
 {
-  "include": ["resources/js/**/*.ts", "resources/js/**/*.tsx", "vitest.config.ts"],
+  "include": ["frontend/js/**/*.ts", "frontend/js/**/*.tsx", "vitest.config.ts"],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
@@ -21,7 +21,7 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "paths": {
-      "@/*": ["./resources/js/*"]
+      "@/*": ["./frontend/js/*"]
     }
   }
 }

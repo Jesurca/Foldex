@@ -7,10 +7,10 @@ export default defineConfig({
     test: {
         environment: 'jsdom',
         globals: true,
-        setupFiles: ['./resources/js/test/setup.ts'],
-        include: ['resources/js/**/*.{test,spec}.{ts,tsx}'],
+        setupFiles: ['./frontend/js/test/setup.ts'],
+        include: ['frontend/js/**/*.{test,spec}.{ts,tsx}'],
     },
     resolve: {
-        alias: { '@': path.resolve(import.meta.dirname, 'resources/js') },
+        alias: { '@': path.resolve(import.meta.dirname, 'frontend/js') },
     },
 });

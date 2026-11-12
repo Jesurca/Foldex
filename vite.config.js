@@ -7,23 +7,24 @@ import path from 'node:path';
 
 export default defineConfig({
     plugins: [
-        // Genera resources/js/routeTree.gen.ts a partir de los archivos en resources/js/routes.
+        // Genera frontend/js/routeTree.gen.ts a partir de los archivos en frontend/js/routes.
         // Debe ir antes del plugin de React.
         tanstackRouter({
             target: 'react',
-            routesDirectory: './resources/js/routes',
-            generatedRouteTree: './resources/js/routeTree.gen.ts',
+            routesDirectory: './frontend/js/routes',
+            generatedRouteTree: './frontend/js/routeTree.gen.ts',
             autoCodeSplitting: true,
         }),
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.tsx'],
-            refresh: true,
+            input: ['frontend/css/app.css', 'frontend/js/app.tsx'],
+            // Recarga el navegador al cambiar la vista base o las rutas de Laravel.
+            refresh: ['frontend/views/**', 'backend/routes/**', 'backend/lang/**'],
         }),
         react(),
         tailwindcss(),
     ],
     resolve: {
-        alias: { '@': path.resolve(import.meta.dirname, 'resources/js') },
+        alias: { '@': path.resolve(import.meta.dirname, 'frontend/js') },
     },
     server: {
         watch: {

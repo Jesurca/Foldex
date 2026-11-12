@@ -14,7 +14,7 @@
         try { if (localStorage.getItem('unab-theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}
     </script>
     @viteReactRefresh
-    @vite(['resources/css/app.css', 'resources/js/app.tsx'])
+    @vite(['frontend/css/app.css', 'frontend/js/app.tsx'])
 </head>
 <body>
     <div id="app"></div>

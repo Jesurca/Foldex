@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { campus } from '@/lib/formato';
 
 // Vite busca las imágenes al compilar y devuelve sus URLs finales (con hash para caché).
-const modulos = import.meta.glob<string>('../../../contexto_img/*.{jpg,jpeg,png,webp,avif,JPG,JPEG,PNG,WEBP}', { eager: true, import: 'default' });
+const modulos = import.meta.glob<string>('../../contexto_img/*.{jpg,jpeg,png,webp,avif,JPG,JPEG,PNG,WEBP}', { eager: true, import: 'default' });
 
 /** Fotos ordenadas por nombre de archivo; si la carpeta está vacía se usa la ilustración del campus. */
 export const FOTOS_CONTEXTO: string[] = Object.keys(modulos)
