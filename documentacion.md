@@ -362,6 +362,29 @@ Prompt de ejemplo: *"Publica mi proyecto en Foldex. Repositorio: https://github.
 
 ---
 
+## Paso 11 — Despliegue en Azure (App Service + PostgreSQL)
+**Qué se hizo:** el proyecto se publicó en **https://foldex-unab.azurewebsites.net** sin cambiar tecnologías: el mismo Laravel 13 sirve la API y la SPA de React compilada con Vite.
+
+| Recurso (grupo `Foldex`, región `mexicocentral`) | Para qué |
+|---|---|
+| App Service Plan `foldex-plan` (Linux, B1) + Web App `foldex-unab` (PHP 8.4, nginx + php-fpm) | Laravel + frontend compilado |
+| Azure Database for PostgreSQL Flexible `foldex-db-jbog8` (PG 17, B1ms), BD `foldex` | La base de datos (SSL obligatorio, `DB_SSLMODE=require`) |
+
+Archivos nuevos en `deploy/azure/`:
+- `startup.sh` — *Startup Command* de la Web App. En cada arranque copia `nginx.conf`, crea las carpetas de `storage/`, genera las cachés (`config`, `route`, `view`), corre `migrate --force` y `db:seed --force` (los seeders son idempotentes: catálogos y admin; los datos de demo solo se cargan en local).
+- `nginx.conf` — raíz en `public/`, todo lo que no es archivo va a `index.php`, `/storage/` sirve las portadas desde `storage/app/public` (sin depender del enlace simbólico), caché larga para `/build/` y bloqueo de archivos ocultos.
+- `php/foldex.ini` — límites de subida (portadas de 2 MB) y OPcache; se carga con la App Setting `PHP_INI_SCAN_DIR`.
+- `desplegar.ps1` — empaqueta el **último commit** (`git archive`), hace `composer install --no-dev`, `npm ci` + `npm run build`, arma el zip y lo sube con `az webapp deploy`. No toca el `vendor/` ni el `node_modules/` locales ni sube el `.env`.
+
+Cambio de código: `bootstrap/app.php` confía en el proxy (`trustProxies(at: '*')`), porque en Azure el HTTPS termina en el balanceador; sin esto Laravel generaría URLs `http://` para los assets y las portadas (contenido mixto).
+
+Configuración: no hay `.env` en el servidor; todo va en **App Settings** de la Web App (`APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY`, `DB_*`, `ADMIN_PASSWORD`, `LOG_CHANNEL=stderr`, `SESSION_SECURE_COOKIE=true`…). Se ven en el portal → Web App → *Configuración* o con `az webapp config appsettings list -g Foldex -n foldex-unab`.
+
+**Volver a desplegar:** hacer commit y ejecutar `.\deploy\azure\desplegar.ps1` (requiere `az login`). Logs en vivo: `az webapp log tail -g Foldex -n foldex-unab`.
+**Commit:** `feat(deploy): despliegue en Azure App Service con PostgreSQL Flexible`
+
+---
+
 ## Preguntas de sustentación
 
 ### Básicas

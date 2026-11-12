@@ -33,6 +33,9 @@ $app = Application::configure(basePath: dirname(__DIR__))
     )
     // Middleware: JSON forzado en /api, alias `role` (EnsureRole) y sin redirección a /login en la API.
     ->withMiddleware(function (Middleware $middleware): void {
+        // En Azure App Service el HTTPS termina en el balanceador: se confía en sus cabeceras X-Forwarded-*
+        // para que Laravel sepa que la petición es https y genere bien las URLs (assets de Vite, portadas).
+        $middleware->trustProxies(at: '*');
         $middleware->api(prepend: [ForzarRespuestaJson::class]);
         $middleware->alias(['role' => EnsureRole::class]);
         $middleware->redirectGuestsTo(fn (Request $request): ?string => $request->is('api/*') ? null : '/');
