@@ -36,7 +36,7 @@ npm run typecheck                    # tsc --noEmit
 php artisan route:list --path=api/v1
 ```
 Cuentas locales:
-- Admin: `admin@unab.edu.co` / `Admin12345*` (cambiar con `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
+- Admin: `fabian@unab.edu.co` / `Admin12345*` (cambiar con `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
 - Estudiantes de demostración: `sgomez@unab.edu.co`, `vtorres@unab.edu.co`, `dredondo@unab.edu.co` / `Estudiante123`.
 
 La bitácora técnica y las preguntas de sustentación están en [`documentacion.md`](documentacion.md).

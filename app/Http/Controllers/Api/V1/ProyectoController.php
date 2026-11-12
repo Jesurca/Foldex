@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Proyectos\ActualizarProyecto;
 use App\Actions\Proyectos\PublicarProyecto;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Proyectos\IndexProyectoRequest;
 use App\Http\Requests\Proyectos\StoreProyectoRequest;
+use App\Http\Requests\Proyectos\UpdateProyectoRequest;
 use App\Http\Resources\ProyectoResource;
 use App\Models\Proyecto;
 use Illuminate\Http\JsonResponse;
@@ -41,6 +43,14 @@ class ProyectoController extends Controller
         return ProyectoResource::make(Proyecto::query()->conDetalles($request->user())->findOrFail($proyecto->id))
             ->response()
             ->setStatusCode(201);
+    }
+
+    /** Solo admin (UpdateProyectoRequest::authorize → ProyectoPolicy::update). Llega como POST + `_method=PUT` si trae foto. */
+    public function update(UpdateProyectoRequest $request, Proyecto $proyecto, ActualizarProyecto $actualizar): ProyectoResource
+    {
+        $actualizar($proyecto, $request->validated());
+
+        return ProyectoResource::make(Proyecto::query()->conDetalles($request->user())->findOrFail($proyecto->id));
     }
 
     public function destroy(Proyecto $proyecto): Response

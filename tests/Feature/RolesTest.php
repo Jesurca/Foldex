@@ -4,6 +4,7 @@ use App\Enums\Role;
 use App\Models\Comentario;
 use App\Models\Proyecto;
 use App\Models\User;
+use Database\Seeders\AdminSeeder;
 use Laravel\Sanctum\Sanctum;
 
 describe('middleware role:admin', function (): void {
@@ -80,16 +81,17 @@ describe('gestión de admins', function (): void {
 });
 
 describe('policies', function (): void {
-    it('solo el dueño o un admin pueden editar/borrar un proyecto', function (): void {
+    it('el estudiante borra solo lo suyo y el admin edita y borra todo', function (): void {
         $dueno = User::factory()->create();
         $otro = User::factory()->create();
         $admin = User::factory()->admin()->create();
         $proyecto = Proyecto::factory()->for($dueno)->create();
 
-        expect($dueno->can('update', $proyecto))->toBeTrue()
+        expect($dueno->can('update', $proyecto))->toBeFalse()
             ->and($dueno->can('delete', $proyecto))->toBeTrue()
             ->and($otro->can('update', $proyecto))->toBeFalse()
             ->and($otro->can('delete', $proyecto))->toBeFalse()
+            ->and($admin->can('update', $proyecto))->toBeTrue()
             ->and($admin->can('delete', $proyecto))->toBeTrue();
     });
 
@@ -101,5 +103,15 @@ describe('policies', function (): void {
         expect($comentario->user->can('delete', $comentario))->toBeTrue()
             ->and($otro->can('delete', $comentario))->toBeFalse()
             ->and($admin->can('delete', $comentario))->toBeTrue();
+    });
+});
+
+describe('admin por defecto', function (): void {
+    it('el seeder crea a fabian@unab.edu.co como admin', function (): void {
+        config(['auth.admin.email' => 'fabian@unab.edu.co', 'auth.admin.password' => 'Admin12345*']);
+
+        $this->seed(AdminSeeder::class);
+
+        expect(User::where('email', 'fabian@unab.edu.co')->sole()->role)->toBe(Role::Admin);
     });
 });

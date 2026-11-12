@@ -41,6 +41,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/me/likes', [MiEspacioController::class, 'likes']);
 
         Route::post('/proyectos', [ProyectoController::class, 'store'])->middleware('throttle:10,1');
+        Route::put('/proyectos/{proyecto}', [ProyectoController::class, 'update'])->middleware('throttle:30,1');
         Route::delete('/proyectos/{proyecto}', [ProyectoController::class, 'destroy']);
 
         Route::post('/proyectos/{proyecto}/like', [LikeController::class, 'store'])->middleware('throttle:60,1');

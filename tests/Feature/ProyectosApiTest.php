@@ -341,3 +341,57 @@ describe('mi espacio', function (): void {
         $this->getJson('/api/v1/me/proyectos')->assertUnauthorized();
     });
 });
+
+describe('editar proyectos (solo admin)', function (): void {
+    it('el admin edita cualquier proyecto sin cambiar autor ni slug', function (): void {
+        $proyecto = Proyecto::factory()->create(['titulo' => 'Viejo']);
+        $autor = $proyecto->user_id;
+        Sanctum::actingAs(User::factory()->admin()->create());
+
+        $this->putJson("/api/v1/proyectos/{$proyecto->slug}", datosProyecto(['titulo' => 'Título corregido']))
+            ->assertOk()
+            ->assertJsonPath('data.titulo', 'Título corregido')
+            ->assertJsonPath('data.slug', $proyecto->slug)
+            ->assertJsonPath('data.can.update', true);
+
+        expect($proyecto->fresh()->user_id)->toBe($autor);
+    });
+
+    it('el autor (estudiante) no puede editar su propio proyecto', function (): void {
+        $proyecto = Proyecto::factory()->create();
+        Sanctum::actingAs($proyecto->user);
+
+        $this->putJson("/api/v1/proyectos/{$proyecto->slug}", datosProyecto())->assertForbidden();
+        $this->getJson("/api/v1/proyectos/{$proyecto->slug}")
+            ->assertJsonPath('data.can.update', false)
+            ->assertJsonPath('data.can.delete', true);
+    });
+
+    it('reemplaza la portada con POST + _method=PUT y borra la anterior', function (): void {
+        Storage::fake('public');
+        $vieja = Storage::disk('public')->putFile('portadas', pngDePrueba('a.png', 600, 300));
+        $proyecto = Proyecto::factory()->create();
+        $proyecto->forceFill(['portada_path' => $vieja])->save();
+        Sanctum::actingAs(User::factory()->admin()->create());
+
+        $this->post("/api/v1/proyectos/{$proyecto->slug}", datosProyecto(['_method' => 'PUT', 'portada' => pngDePrueba('b.png', 600, 300)]))
+            ->assertOk();
+
+        $nueva = $proyecto->fresh()->portada_path;
+        expect($nueva)->not->toBe($vieja);
+        Storage::disk('public')->assertMissing($vieja);
+        Storage::disk('public')->assertExists($nueva);
+    });
+
+    it('quita la portada con quitar_portada', function (): void {
+        Storage::fake('public');
+        $vieja = Storage::disk('public')->putFile('portadas', pngDePrueba('a.png', 600, 300));
+        $proyecto = Proyecto::factory()->create();
+        $proyecto->forceFill(['portada_path' => $vieja])->save();
+        Sanctum::actingAs(User::factory()->admin()->create());
+
+        $this->putJson("/api/v1/proyectos/{$proyecto->slug}", datosProyecto(['quitar_portada' => true]))
+            ->assertOk()->assertJsonPath('data.portada_url', null);
+        Storage::disk('public')->assertMissing($vieja);
+    });
+});

@@ -29,7 +29,7 @@ class AdminSeeder extends Seeder
 
         $admin = User::firstOrNew(['email' => $email]);
         $admin->fill([
-            'name' => 'Administrador Comité Sistemas',
+            'name' => config('auth.admin.name'),
             'password' => $password,
             'programa' => 'Ingeniería de Sistemas',
         ]);

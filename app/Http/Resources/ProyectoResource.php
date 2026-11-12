@@ -38,6 +38,7 @@ class ProyectoResource extends JsonResource
             'comentarios_count' => (int) ($this->comentarios_count ?? 0),
             'liked' => $usuario ? (bool) ($this->liked_by_me ?? false) : null,
             'can' => [
+                'update' => (bool) $usuario?->can('update', $this->resource),
                 'delete' => (bool) $usuario?->can('delete', $this->resource),
             ],
             'publicado_en' => $this->created_at?->toIso8601String(),

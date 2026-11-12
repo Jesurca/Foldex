@@ -117,7 +117,8 @@ return [
     'allowed_domain' => env('ALLOWED_EMAIL_DOMAIN', 'unab.edu.co'),
 
     'admin' => [
-        'email' => env('ADMIN_EMAIL', 'admin@unab.edu.co'),
+        'name' => env('ADMIN_NAME', 'Fabián Enrique Suárez Carvajal'),
+        'email' => env('ADMIN_EMAIL', 'fabian@unab.edu.co'),
         'password' => env('ADMIN_PASSWORD'),
     ],
 
