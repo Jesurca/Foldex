@@ -75,9 +75,9 @@ export function urlVideoEmbebido(url: string | null | undefined): string | null 
 export function metadata(titulo: string, descripcion: string) {
     return {
         meta: [
-            { title: `${titulo} | UNAB Proyectos` },
+            { title: `${titulo} | Foldex` },
             { name: 'description', content: descripcion },
-            { property: 'og:title', content: `${titulo} | UNAB Proyectos` },
+            { property: 'og:title', content: `${titulo} | Foldex` },
             { property: 'og:description', content: descripcion },
         ],
     };

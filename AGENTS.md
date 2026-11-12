@@ -46,7 +46,7 @@ php artisan boost:install
 Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
 </laravel-boost-guidelines>
 
-# Proyecto: Repositorio de Proyectos UNAB
+# Proyecto: Foldex (Repositorio de Proyectos UNAB)
 
 - **Frontend:** vive en este repo, en `frontend/js` (React 19 + TanStack Router/Query + Tailwind v4). Es una SPA servida por Laravel (`frontend/views/app.blade.php`, ruta comodín en `backend/routes/web.php`) que consume `/api/v1` con token Bearer de Sanctum, desde el mismo origen (sin CORS). Vino de Lovable, pero **los cambios se hacen aquí, no en Lovable**.
 - **Estructura:** `backend/` (app, config, database, lang, routes — Laravel) y `frontend/` (js, css, views, contexto_img — React/Vite) en el mismo proyecto; `bootstrap/app.php` y `composer.json` apuntan a esas carpetas. `tests/` (Pest) sigue en la raíz porque Pest la busca ahí.

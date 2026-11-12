@@ -19,10 +19,10 @@ use Laravel\Mcp\Server\Attributes\Version;
  * Las instrucciones de abajo las lee Claude al conectarse: le dicen qué pedirle al
  * estudiante (solo repositorio y docente) y qué completar por su cuenta.
  */
-#[Name('Repositorio de Proyectos UNAB')]
+#[Name('Foldex')]
 #[Version('1.0.0')]
 #[Instructions(<<<'TXT'
-    Publica proyectos académicos de Ingeniería de Sistemas en el Repositorio de Proyectos UNAB.
+    Publica proyectos académicos de Ingeniería de Sistemas de la UNAB en Foldex.
 
     Al estudiante solo le pides: (1) el enlace del repositorio y (2) el nombre del docente.
     El publicante es la cuenta conectada (la ves en `listar_catalogos`); confírmale ese nombre antes de publicar.

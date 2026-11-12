@@ -15,7 +15,7 @@ function montar() {
     return render(
         <QueryClientProvider client={queryClient}>
             <CarruselHero>
-                <h1>Proyectos UNAB</h1>
+                <h1>Foldex</h1>
             </CarruselHero>
         </QueryClientProvider>,
     );
@@ -30,7 +30,7 @@ describe('carrusel de la portada', () => {
 
         expect(await screen.findByRole('button', { name: 'Ver foto 3' })).toBeInTheDocument();
         expect(screen.getAllByRole('button', { name: /^Ver foto/ })).toHaveLength(3);
-        expect(screen.getByRole('heading', { name: 'Proyectos UNAB' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Foldex' })).toBeInTheDocument();
     });
 
     it('avanza con la flecha', async () => {

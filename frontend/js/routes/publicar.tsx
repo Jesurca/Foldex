@@ -50,8 +50,7 @@ function Pagina({ nombre, email }: { nombre: string; email: string }) {
                     <ArrowLeft className="size-4" />
                     Volver a la biblioteca
                 </Link>
-                <p className="section-eyebrow mt-8">COMPARTE LO QUE ESTÁS CREANDO</p>
-                <h1 className="mt-2 text-3xl font-bold">Publicar proyecto</h1>
+                <h1 className="mt-8 text-3xl font-bold">Publicar proyecto</h1>
                 <p className="mt-3 text-sm text-muted-foreground">
                     {nombre} · {email}
                 </p>

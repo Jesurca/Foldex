@@ -60,8 +60,7 @@ function Editar() {
                     <ArrowLeft className="size-4" />
                     Volver al proyecto
                 </Link>
-                <p className="section-eyebrow mt-8">MODERACIÓN</p>
-                <h1 className="mt-2 text-3xl font-bold">Editar proyecto</h1>
+                <h1 className="mt-8 text-3xl font-bold">Editar proyecto</h1>
                 {consulta.isPending ? (
                     <Cargando />
                 ) : consulta.isError ? (

@@ -59,8 +59,7 @@ function Contenido({ usuario }: { usuario: Usuario }) {
                 <div className="flex items-center gap-4">
                     <span className="avatar-mini size-16 text-2xl">{usuario.name.slice(0, 1)}</span>
                     <div>
-                        <p className="section-eyebrow">MI ESPACIO</p>
-                        <h1 className="mt-1 text-3xl font-bold">{usuario.name}</h1>
+                        <h1 className="text-3xl font-bold">{usuario.name}</h1>
                         <p className="mt-1 text-sm text-muted-foreground">
                             {usuario.email} · {usuario.role === 'admin' ? 'Administrador' : 'Estudiante'}
                             {usuario.semestre ? ` · Semestre ${usuario.semestre}` : ''}

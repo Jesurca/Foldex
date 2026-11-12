@@ -3,23 +3,23 @@
 // Imports: router, iconos, avisos, botón, diálogo y la sesión (useAuth).
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { ArrowUpRight, Loader2, LogOut, Moon, Plus, Sun, UserRound } from 'lucide-react';
+import { Loader2, LogOut, Moon, Plus, Sun, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { ApiError, mensajeDeError } from '@/lib/api/client';
 import { correoPermitido, DOMINIO_PERMITIDO, useAuth } from '@/lib/auth';
 
-// Logo "unab. Proyectos".
+// Logo: la palabra Foldex y, al lado, de qué es el repositorio.
 export function Brand() {
     return (
         <Link to="/" className="flex items-center gap-3">
             <span className="brand-word">
-                unab<span className="text-primary">.</span>
+                Foldex<span className="text-primary">.</span>
             </span>
             <span className="h-8 border-l" />
             <span className="text-sm font-bold leading-tight">
-                Proyectos<span className="block text-[10px] font-normal text-muted-foreground">INGENIERÍA DE SISTEMAS</span>
+                Proyectos<span className="block text-[11px] font-normal text-muted-foreground">Ingeniería de Sistemas · UNAB</span>
             </span>
         </Link>
     );
@@ -121,10 +121,7 @@ export function ProjectShell({ children }: { children: ReactNode }) {
             <footer className="mt-16 border-t">
                 <div className="site-width flex flex-wrap items-center justify-between gap-6 py-8">
                     <Brand />
-                    <p className="text-xs text-muted-foreground">Proyecto académico · Ingeniería de Sistemas UNAB</p>
-                    <span className="text-xs text-muted-foreground">
-                        Hecho para compartir conocimiento <ArrowUpRight className="ml-1 inline size-3" />
-                    </span>
+                    <p className="text-xs text-muted-foreground">Repositorio académico del programa de Ingeniería de Sistemas · Universidad Autónoma de Bucaramanga</p>
                 </div>
             </footer>
             <ModalAcceso />
@@ -212,7 +209,7 @@ function ModalAcceso() {
     return (
         <Dialog open={modal.abierto} onOpenChange={(abierto) => (abierto ? cambiarModo(modal.modo) : cerrarModal())}>
             <DialogContent className="max-h-[92vh] max-w-md overflow-y-auto">
-                <DialogTitle>{registro ? 'Crea tu cuenta' : 'Bienvenido a la comunidad'}</DialogTitle>
+                <DialogTitle>{registro ? 'Crea tu cuenta' : 'Ingresa a Foldex'}</DialogTitle>
                 <DialogDescription>Usa tu correo institucional @{DOMINIO_PERMITIDO}.</DialogDescription>
                 <form onSubmit={(e) => void enviar(e)} className="grid gap-4" noValidate>
                     {registro && (
@@ -271,7 +268,6 @@ function ModalAcceso() {
                     <Button type="submit" disabled={enviando}>
                         {enviando ? <Loader2 className="animate-spin" /> : null}
                         {registro ? 'Crear cuenta' : 'Ingresar'}
-                        {!enviando && <ArrowUpRight />}
                     </Button>
                     <Button type="button" variant="link" onClick={() => cambiarModo(registro ? 'entrar' : 'registro')}>
                         {registro ? 'Ya tengo una cuenta' : '¿Primera vez? Crea tu cuenta'}

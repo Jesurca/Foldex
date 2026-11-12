@@ -1,4 +1,4 @@
-# Repositorio de Proyectos UNAB
+# Foldex — Repositorio de Proyectos UNAB
 
 Aplicación donde los estudiantes de Ingeniería de Sistemas de la UNAB publican los proyectos de programación de sus materias. Solo se aceptan correos `@unab.edu.co`.
 

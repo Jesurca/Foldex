@@ -2,7 +2,7 @@
 
 // Imports: enlace del router, iconos, botón, tipos y utilidades (like optimista y formato).
 import { Link } from '@tanstack/react-router';
-import { ArrowUpRight, Heart, MessageCircle } from 'lucide-react';
+import { Heart, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Proyecto } from '@/lib/api/tipos';
 import { useLike } from '@/lib/consultas';
@@ -23,9 +23,6 @@ export function ProjectCard({ project: p }: { project: Proyecto }) {
                     className="aspect-[1.85] w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <span className="absolute left-4 top-4 rounded bg-card/95 px-2.5 py-1 text-[11px] font-semibold">Semestre {p.materia.semestre}</span>
-                <span className="absolute bottom-3 right-3 flex size-8 items-center justify-center rounded-full bg-card">
-                    <ArrowUpRight className="size-4" />
-                </span>
             </Link>
             <div className="p-5">
                 <div className="mb-2 flex flex-wrap gap-1.5">
@@ -58,11 +55,11 @@ export function ProjectCard({ project: p }: { project: Proyecto }) {
                             onClick={() => alternarLike(p)}
                         >
                             <Heart className={p.liked ? 'fill-primary' : ''} />
-                            {p.likes_count}
+                            <span className="tabular-nums">{p.likes_count}</span>
                         </Button>
                         <Link to="/proyectos/$id" params={{ id: p.slug }} hash="conversacion" className="flex items-center gap-1">
                             <MessageCircle className="size-3.5" />
-                            {p.comentarios_count}
+                            <span className="tabular-nums">{p.comentarios_count}</span>
                         </Link>
                     </div>
                 </div>

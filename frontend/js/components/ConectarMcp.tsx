@@ -40,7 +40,7 @@ export function configClaudeDesktop(url: string, token: string): string {
 }
 
 /** Prompt de ejemplo: lo único obligatorio es el repositorio y el docente; el publicante es la cuenta conectada. */
-const PROMPT_EJEMPLO = 'Publica mi proyecto en el Repositorio de Proyectos UNAB.\nRepositorio: https://github.com/usuario/mi-proyecto\nDocente: Fabián Suárez';
+const PROMPT_EJEMPLO = 'Publica mi proyecto en Foldex.\nRepositorio: https://github.com/usuario/mi-proyecto\nDocente: Fabián Suárez';
 
 export function BotonConectarMcp({ className, variante = 'default' }: { className?: string; variante?: 'default' | 'outline' }) {
     const { usuario, abrirModal } = useAuth();

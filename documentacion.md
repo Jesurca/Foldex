@@ -1,4 +1,4 @@
-# Documentación técnica — Repositorio de Proyectos UNAB (API Laravel)
+# Documentación técnica — Foldex, Repositorio de Proyectos UNAB (API Laravel)
 
 Bitácora de cada paso del backend: qué se hizo, por qué, cómo probarlo y el commit asociado.
 
@@ -56,7 +56,7 @@ php artisan config:publish cors
 ./vendor/bin/pest
 ```
 **Archivos:** `docker-compose.yml`, `.env.example`, `config/database.php`, `config/auth.php`, `config/cors.php`, `routes/api.php`, `bootstrap/app.php`, `phpunit.xml`, `tests/Pest.php`, `tests/Feature/PingTest.php`, `lang/es/*`.
-**Cómo probar:** `GET {{base_url}}/api/v1/ping` con `Accept: application/json` → **200** `{"status":"ok","app":"Repositorio Proyectos UNAB","version":"v1"}`.
+**Cómo probar:** `GET {{base_url}}/api/v1/ping` con `Accept: application/json` → **200** `{"status":"ok","app":"Foldex","version":"v1"}`.
 **Commit:** `config: configurar PostgreSQL, Sanctum, CORS y Pest`
 
 ---
@@ -284,7 +284,7 @@ claude mcp add --transport http proyectos-unab http://localhost:8000/mcp/proyect
   "args": ["-y", "mcp-remote", "http://localhost:8000/mcp/proyectos", "--header", "Authorization:${AUTH_HEADER}"],
   "env": { "AUTH_HEADER": "Bearer <llave>" } } } }
 ```
-Prompt de ejemplo: *"Publica mi proyecto en el Repositorio de Proyectos UNAB. Repositorio: https://github.com/usuario/mi-proyecto. Docente: Fabián Suárez"*.
+Prompt de ejemplo: *"Publica mi proyecto en Foldex. Repositorio: https://github.com/usuario/mi-proyecto. Docente: Fabián Suárez"*.
 
 **Por qué:**
 - **Mismo token de Sanctum que la web.** El botón llama a `POST /api/v1/me/tokens` con el nombre `Claude (MCP)`. La ruta MCP usa `auth:sanctum`, así que el autor siempre sale del token y nunca de lo que escriba Claude. Desde el mismo diálogo se revocan las conexiones (`DELETE /me/tokens/{id}`).
@@ -346,6 +346,19 @@ Prompt de ejemplo: *"Publica mi proyecto en el Repositorio de Proyectos UNAB. Re
 
 **Verificación:** `pest` 92 verdes · `npm test` 25 verdes · `npm run typecheck` sin errores · `npm run build` correcto · `php artisan route:list` muestra `/api/v1/*`, `/mcp/proyectos` y la SPA.
 **Commits:** `refactor: separar el proyecto en backend/ y frontend/` · `docs(back): comentar cada archivo del backend…` · `docs(front): comentar cada archivo del frontend…`
+
+---
+
+## Paso 10 — Nombre Foldex y pulido visual (sin cambiar funciones)
+**Qué se hizo:** la página se llama **Foldex**. Se cambiaron el logo, el título de la portada, los títulos de pestaña (`… | Foldex`), `APP_NAME`, el nombre del servidor MCP y el prompt de ejemplo. Además se hizo una pasada de pulido con el skill *Impeccable* para quitar marcas típicas de diseño generado por IA, conservando colores, tipografía, distribución y comportamiento.
+- Sin etiquetas decorativas en mayúsculas sobre los títulos ("LA BIBLIOTECA DE NUESTRA COMUNIDAD", "MODERACIÓN"…). En el detalle, materia · semestre · periodo pasó a ser una línea de datos debajo del título.
+- Se cambiaron textos de relleno por texto concreto. Se fueron: "Ideas de aquí. Impacto en todas partes.", "COMUNIDAD · INGENIERÍA · INNOVACIÓN", "Hecho para compartir conocimiento" y "Lo que creas merece ser compartido".
+- Las cifras del catálogo van en una sola línea, sin iconos ni ceros de relleno ("09") y con números tabulares.
+- Se quitaron la franja de color a la izquierda de la invitación final, la flecha flotante de las tarjetas y las flechas "↗" en enlaces internos.
+- La selección de texto, el cursor, el foco de los enlaces y la barra de desplazamiento usan los colores del sitio.
+
+**Verificación:** `pest` 99 verdes · `npm test` 26 verdes · typecheck y build sin errores · detector de Impeccable sin hallazgos · capturas en escritorio y celular.
+**Commit:** `feat(front): nombre Foldex y pulido visual sin texto de relleno`
 
 ---
 

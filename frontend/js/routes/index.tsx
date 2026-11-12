@@ -3,8 +3,8 @@
 // Imports: React Query, router, React, iconos, componentes propios, servicios, tipos y catálogos.
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ArrowRight, ArrowUpRight, BookOpen, Code2, FolderGit2, LayoutGrid, List, Search, SlidersHorizontal } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, LayoutGrid, List, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CarruselHero } from '@/components/CarruselHero';
 import { Cargando, ErrorEstado, Paginacion, Vacio } from '@/components/Estados';
@@ -48,7 +48,7 @@ export const Route = createFileRoute('/')({
         page: entero(s['page']),
         vista: s['vista'] === 'lista' ? 'lista' : undefined,
     }),
-    head: () => metadata('Explora el talento de nuestra comunidad', 'Biblioteca académica de proyectos de Ingeniería de Sistemas de la UNAB.'),
+    head: () => metadata('Proyectos de Ingeniería de Sistemas', 'Foldex: repositorio de proyectos de Ingeniería de Sistemas de la UNAB.'),
     component: Catalogo,
 });
 
@@ -106,42 +106,32 @@ function Catalogo() {
                     {/* Carrusel con las fotos de contexto_img/ y el texto de bienvenida encima */}
                     <CarruselHero>
                         <div className="relative z-10 max-w-xl p-7 pb-16 sm:p-10 sm:pb-16 lg:p-12 lg:pb-16">
-                            <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest">
-                                <span className="h-1.5 w-1.5 rounded-full bg-primary" /> CONOCIMIENTO QUE SE COMPARTE
-                            </p>
-                            <h1 className="text-4xl font-bold leading-[1.12] sm:text-5xl">
-                                Proyectos UNAB
-                                <span className="mt-2 block text-3xl font-normal sm:text-4xl">
-                                    Ideas de aquí.
-                                    <br />
-                                    Impacto en todas partes.
-                                </span>
-                            </h1>
-                            <p className="mt-5 max-w-sm text-sm leading-6 opacity-85">
-                                Explora lo que estamos creando en Ingeniería de Sistemas. Aprende, conecta y haz parte de la próxima gran idea.
+                            <h1 className="hero-title">Foldex</h1>
+                            <p className="mt-4 max-w-md text-xl leading-snug text-balance sm:text-2xl">Los proyectos de Ingeniería de Sistemas de la UNAB, en un solo lugar.</p>
+                            <p className="mt-4 max-w-sm text-sm leading-6 opacity-85">
+                                Busca por materia, docente o tecnología, abre el repositorio y deja tu comentario.
                             </p>
                             <Button asChild className="mt-7">
                                 <Link to="/publicar">
-                                    Comparte tu proyecto <ArrowUpRight />
+                                    <Plus /> Publicar proyecto
                                 </Link>
                             </Button>
                         </div>
-                        <span className="absolute bottom-5 right-6 z-10 hidden text-[10px] opacity-80 sm:block">COMUNIDAD · INGENIERÍA · INNOVACIÓN</span>
                     </CarruselHero>
-                    <div className="grid grid-cols-3 border-b py-6">
-                        <Stat icon={<FolderGit2 />} value={totalGeneral.data?.meta.total} label="Proyectos compartidos" />
-                        <Stat icon={<BookOpen />} value={materias.data?.length} label="Materias del programa" />
-                        <Stat icon={<Code2 />} value={tecnologias.data?.length} label="Tecnologías en el catálogo" />
-                    </div>
+                    {/* Cifras del catálogo en una sola línea (sin iconos ni ceros de relleno) */}
+                    <p className="flex flex-wrap gap-x-6 gap-y-1 border-b py-5 text-sm text-muted-foreground">
+                        <Cifra valor={totalGeneral.data?.meta.total} texto="proyectos publicados" />
+                        <Cifra valor={materias.data?.length} texto="materias" />
+                        <Cifra valor={tecnologias.data?.length} texto="tecnologías en el catálogo" />
+                    </p>
                 </section>
-                <section id="ranking" className="site-width scroll-mt-4 pt-9">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
+                <section id="ranking" className="site-width scroll-mt-4 pt-10">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
                         <div>
-                            <p className="section-eyebrow">LA BIBLIOTECA DE NUESTRA COMUNIDAD</p>
-                            <h2 className="mt-2 text-3xl font-bold">Los proyectos más valorados</h2>
-                            <p className="mt-2 text-sm text-muted-foreground">Los que más me gusta han recibido de la comunidad en el periodo que elijas.</p>
+                            <h2 className="text-3xl font-bold">Los más valorados</h2>
+                            <p className="mt-2 text-sm text-muted-foreground">Ordenados por los me gusta que recibieron en el periodo que elijas.</p>
                         </div>
-                        <Link to="/mi-espacio" className="mt-7 flex items-center gap-2 text-xs font-semibold">
+                        <Link to="/mi-espacio" className="flex items-center gap-2 text-xs font-semibold hover:text-primary">
                             Ver mi espacio <ArrowRight className="size-4" />
                         </Link>
                     </div>
@@ -267,17 +257,17 @@ function Catalogo() {
                             />
                         </>
                     ) : (
-                        <Vacio>{hayFiltros ? 'No encontramos proyectos con esos filtros.' : 'Aún no hay proyectos publicados. ¡Sé el primero!'}</Vacio>
+                        <Vacio>{hayFiltros ? 'No encontramos proyectos con esos filtros.' : 'Todavía no hay proyectos publicados.'}</Vacio>
                     )}
+                    {/* Cierre: invitación directa a publicar */}
                     <div className="community-band mt-12 flex flex-wrap items-center justify-between gap-6 px-7 py-8">
                         <div>
-                            <p className="section-eyebrow">EL SIGUIENTE PROYECTO PUEDE SER EL TUYO</p>
-                            <h2 className="mt-2 text-2xl font-bold">Lo que creas merece ser compartido.</h2>
+                            <h2 className="text-2xl font-bold">¿Hiciste un proyecto en alguna materia?</h2>
+                            <p className="mt-2 text-sm text-muted-foreground">Publícalo con el repositorio y el docente; así otros estudiantes lo encuentran.</p>
                         </div>
                         <Button asChild variant="outline">
                             <Link to="/publicar">
-                                Publicar mi proyecto
-                                <ArrowUpRight />
+                                <Plus /> Publicar proyecto
                             </Link>
                         </Button>
                     </div>
@@ -287,13 +277,11 @@ function Catalogo() {
     );
 }
 
-// Una cifra de la franja de estadísticas.
-function Stat({ icon, value, label }: { icon: ReactNode; value: number | undefined; label: string }) {
+// Una cifra del catálogo: número en negrita (alineación tabular) y su descripción.
+function Cifra({ valor, texto }: { valor: number | undefined; texto: string }) {
     return (
-        <div className="flex flex-col items-center gap-2 border-r last:border-r-0 sm:flex-row sm:justify-center sm:gap-3">
-            <span className="text-primary [&_svg]:size-5">{icon}</span>
-            <span className="text-2xl font-bold">{value === undefined ? '—' : String(value).padStart(2, '0')}</span>
-            <span className="max-w-24 text-center text-[10px] leading-4 text-muted-foreground sm:text-left sm:text-xs">{label}</span>
-        </div>
+        <span>
+            <strong className="font-bold text-foreground tabular-nums">{valor ?? '—'}</strong> {texto}
+        </span>
     );
 }

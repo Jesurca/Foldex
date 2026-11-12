@@ -4,7 +4,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { ArrowLeft, BookOpen, Calendar, CalendarRange, Github, GraduationCap, Heart, Loader2, Pencil, Play, Plug, Send, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calendar, CalendarRange, Github, GraduationCap, Heart, Loader2, Pencil, Play, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { BotonConectarMcp } from '@/components/ConectarMcp';
@@ -103,10 +103,11 @@ function Ficha({ p }: { p: Proyecto }) {
                         ) : (
                             <img src={portada(p)} alt={p.titulo} width={1024} height={768} className="max-h-96 w-full rounded-lg object-cover" />
                         )}
-                        <p className="section-eyebrow mt-7">
-                            {p.materia.nombre.toUpperCase()} · SEMESTRE {p.materia.semestre}
+                        <h1 className="mt-7 text-4xl font-bold text-balance [overflow-wrap:anywhere]">{p.titulo}</h1>
+                        {/* Materia, semestre y periodo debajo del título, como dato y no como etiqueta decorativa */}
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            {p.materia.nombre} · Semestre {p.materia.semestre} · {p.periodo}
                         </p>
-                        <h1 className="mt-3 text-4xl font-bold [overflow-wrap:anywhere]">{p.titulo}</h1>
                         {/* overflow-wrap:anywhere: enlaces o palabras muy largas se parten en vez de salirse por la derecha */}
                         <p className="mt-5 whitespace-pre-line text-base leading-7 text-muted-foreground [overflow-wrap:anywhere]">{p.contexto}</p>
                         <h2 className="mt-8 text-xl font-bold">Tecnologías utilizadas</h2>
@@ -351,8 +352,7 @@ function Conversacion({ p }: { p: Proyecto }) {
 function ConectaIA() {
     return (
         <section>
-            <Plug className="size-6 text-primary" />
-            <h2 className="mt-3 text-lg font-bold">Publica desde tu IA</h2>
+            <h2 className="text-lg font-bold">Publica desde tu IA</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 Conecta Claude a tu cuenta por MCP y publica tu proyecto con un mensaje: tú das el repositorio y el docente; Claude escribe la descripción y elige la foto.
             </p>

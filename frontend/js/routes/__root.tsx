@@ -62,7 +62,7 @@ function ErrorGeneral({ error, reset }: ErrorComponentProps) {
 // Registro de la ruta raíz (recibe el QueryClient como contexto).
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
     head: () => ({
-        meta: [{ title: 'UNAB Proyectos' }, { name: 'description', content: 'Biblioteca de proyectos de Ingeniería de Sistemas' }],
+        meta: [{ title: 'Foldex' }, { name: 'description', content: 'Foldex: repositorio de proyectos de Ingeniería de Sistemas de la UNAB' }],
     }),
     component: Raiz,
     notFoundComponent: NoEncontrada,
