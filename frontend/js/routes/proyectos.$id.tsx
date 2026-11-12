@@ -106,8 +106,9 @@ function Ficha({ p }: { p: Proyecto }) {
                         <p className="section-eyebrow mt-7">
                             {p.materia.nombre.toUpperCase()} · SEMESTRE {p.materia.semestre}
                         </p>
-                        <h1 className="mt-3 text-4xl font-bold break-words">{p.titulo}</h1>
-                        <p className="mt-5 whitespace-pre-line text-base leading-7 text-muted-foreground">{p.contexto}</p>
+                        <h1 className="mt-3 text-4xl font-bold [overflow-wrap:anywhere]">{p.titulo}</h1>
+                        {/* overflow-wrap:anywhere: enlaces o palabras muy largas se parten en vez de salirse por la derecha */}
+                        <p className="mt-5 whitespace-pre-line text-base leading-7 text-muted-foreground [overflow-wrap:anywhere]">{p.contexto}</p>
                         <h2 className="mt-8 text-xl font-bold">Tecnologías utilizadas</h2>
                         <div className="mt-3 flex flex-wrap gap-2">
                             {p.tecnologias.map((t) => (

@@ -36,9 +36,9 @@ export function ProjectCard({ project: p }: { project: Proyecto }) {
                     ))}
                 </div>
                 <Link to="/proyectos/$id" params={{ id: p.slug }}>
-                    <h3 className="text-xl font-bold transition-colors hover:text-primary">{p.titulo}</h3>
+                    <h3 className="text-xl font-bold transition-colors hover:text-primary [overflow-wrap:anywhere]">{p.titulo}</h3>
                 </Link>
-                <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground">{p.contexto}</p>
+                <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground [overflow-wrap:anywhere]">{p.contexto}</p>
                 <div className="mt-5 flex items-center gap-2.5">
                     <span className="avatar-mini">{iniciales(p.autor.name)}</span>
                     <div>
