@@ -2,6 +2,7 @@
 
 namespace App\Actions\Proyectos;
 
+// Imports: modelos de catálogo, colecciones de Eloquent y utilidades de texto (Str).
 use App\Models\Docente;
 use App\Models\Materia;
 use App\Models\Tecnologia;

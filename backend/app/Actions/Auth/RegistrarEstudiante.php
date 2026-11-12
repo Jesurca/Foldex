@@ -2,9 +2,11 @@
 
 namespace App\Actions\Auth;
 
+// Imports: rol (enum) y modelo de usuario.
 use App\Enums\Role;
 use App\Models\User;
 
+/** Registro público: siempre crea un estudiante, aunque el body pida otro rol. */
 class RegistrarEstudiante
 {
     /**

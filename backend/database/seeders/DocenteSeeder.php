@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+// Imports: modelo Docente y clase Seeder.
 use App\Models\Docente;
 use Illuminate\Database\Seeder;
 

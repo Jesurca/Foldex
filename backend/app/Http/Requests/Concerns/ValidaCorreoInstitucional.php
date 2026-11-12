@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Concerns;
 
+// Imports: utilidades de texto (Str).
 use Illuminate\Support\Str;
 
 /**

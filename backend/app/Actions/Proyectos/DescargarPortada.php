@@ -2,6 +2,7 @@
 
 namespace App\Actions\Proyectos;
 
+// Imports: archivo subido (para reutilizar la validación) y cliente HTTP de Laravel.
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Throwable;

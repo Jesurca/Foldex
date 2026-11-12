@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+// Imports: Resource y modelo de proyecto, constructor de consultas y tipos HTTP.
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProyectoResource;
 use App\Models\Proyecto;
@@ -10,8 +11,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 
+/** Pantalla "Mi espacio": mis publicaciones y los proyectos a los que di me gusta. */
 class MiEspacioController extends Controller
 {
+    // Ruta: GET /api/v1/me/proyectos
     public function proyectos(Request $request): AnonymousResourceCollection
     {
         $proyectos = Proyecto::query()
@@ -24,6 +27,7 @@ class MiEspacioController extends Controller
         return ProyectoResource::collection($proyectos);
     }
 
+    // Ruta: GET /api/v1/me/likes
     /** Proyectos a los que el usuario dio like, del like más reciente al más antiguo. */
     public function likes(Request $request): AnonymousResourceCollection
     {

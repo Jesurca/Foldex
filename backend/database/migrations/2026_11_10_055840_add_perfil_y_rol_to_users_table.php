@@ -1,10 +1,12 @@
 <?php
 
+// Imports: clases de Laravel para definir el esquema (Migration, Blueprint, Schema).
 use App\Enums\Role;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// Migración: Agrega a users el rol (estudiante/admin), el programa y el semestre.
 return new class extends Migration
 {
     public function up(): void

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+// Imports: factory, consultas (Builder), relaciones, borrado lógico y utilidades de texto (slug).
 use Database\Factories\ProyectoFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
+/** Proyecto publicado (tabla proyectos): autor, materia, docente, tecnologías, likes y comentarios. */
 class Proyecto extends Model
 {
     /** @use HasFactory<ProyectoFactory> */

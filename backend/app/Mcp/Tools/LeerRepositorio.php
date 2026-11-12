@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+// Imports: esquema JSON de la herramienta, cliente HTTP (API de GitHub) y clases base de laravel/mcp.
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;

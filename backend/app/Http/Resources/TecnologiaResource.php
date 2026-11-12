@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+// Imports: modelo Tecnologia, petición y JsonResource.
 use App\Models\Tecnologia;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;

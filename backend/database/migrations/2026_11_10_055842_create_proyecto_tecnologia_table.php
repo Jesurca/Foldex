@@ -1,9 +1,11 @@
 <?php
 
+// Imports: clases de Laravel para definir el esquema (Migration, Blueprint, Schema).
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// Migración: Tabla pivote proyecto ↔ tecnología, con llave primaria compuesta (sin repetidos).
 return new class extends Migration
 {
     public function up(): void

@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Servers;
 
+// Imports: las tres herramientas MCP y los atributos del servidor (nombre, versión, instrucciones).
 use App\Mcp\Tools\LeerRepositorio;
 use App\Mcp\Tools\ListarCatalogos;
 use App\Mcp\Tools\PublicarProyecto;

@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+// Imports: modelos Proyecto y User.
 use App\Models\Proyecto;
 use App\Models\User;
 

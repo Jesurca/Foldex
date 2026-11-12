@@ -1,5 +1,6 @@
 <?php
 
+// Imports: middleware propios, excepciones que se traducen a JSON en español y clases de arranque de Laravel.
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\ForzarRespuestaJson;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -22,7 +23,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 | Por eso aquí se le indica a Laravel dónde está cada cosa (ver el final del archivo).
 */
 $app = Application::configure(basePath: dirname(__DIR__))
-    // Rutas: web (SPA), api (/api/v1), consola y MCP (/mcp/proyectos, lo carga laravel/mcp desde routes/ai.php).
+    // Rutas: web (SPA), api (/api/v1), consola y MCP (/mcp/proyectos, en backend/routes/ai.php).
     ->withRouting(
         web: __DIR__.'/../backend/routes/web.php',
         api: __DIR__.'/../backend/routes/api.php',
@@ -30,11 +31,13 @@ $app = Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: fn () => Route::group([], __DIR__.'/../backend/routes/ai.php'),
     )
+    // Middleware: JSON forzado en /api, alias `role` (EnsureRole) y sin redirección a /login en la API.
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->api(prepend: [ForzarRespuestaJson::class]);
         $middleware->alias(['role' => EnsureRole::class]);
         $middleware->redirectGuestsTo(fn (Request $request): ?string => $request->is('api/*') ? null : '/');
     })
+    // Errores: en /api y /mcp siempre JSON con mensajes en español (401, 403, 404, 405, 429).
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),

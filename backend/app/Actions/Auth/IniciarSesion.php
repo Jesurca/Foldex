@@ -2,10 +2,12 @@
 
 namespace App\Actions\Auth;
 
+// Imports: usuario, verificación de contraseñas (Hash) y error 422 de validación.
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
+/** Verifica correo y contraseña. Responde el mismo error si falla cualquiera de los dos (no revela qué cuentas existen). */
 class IniciarSesion
 {
     /**

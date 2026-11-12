@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+// Imports: Actions de autenticación, validaciones de login/registro, Resource del usuario y tipos de respuesta HTTP.
 use App\Actions\Auth\EmitirToken;
 use App\Actions\Auth\IniciarSesion;
 use App\Actions\Auth\RegistrarEstudiante;
@@ -13,8 +14,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
+/** Registro, inicio y cierre de sesión con tokens de Sanctum. */
 class AuthController extends Controller
 {
+    // Ruta: POST /api/v1/register
     public function register(RegisterRequest $request, RegistrarEstudiante $registrar, EmitirToken $emitir): JsonResponse
     {
         $user = $registrar($request->safe()->except('device_name'));
@@ -25,6 +28,7 @@ class AuthController extends Controller
         ], 201);
     }
 
+    // Ruta: POST /api/v1/login
     public function login(LoginRequest $request, IniciarSesion $iniciar, EmitirToken $emitir): JsonResponse
     {
         $user = $iniciar($request->validated('email'), $request->validated('password'));
@@ -35,6 +39,7 @@ class AuthController extends Controller
         ]);
     }
 
+    // Ruta: POST /api/v1/logout
     public function logout(Request $request): Response
     {
         $request->user()->currentAccessToken()->delete();
@@ -42,6 +47,7 @@ class AuthController extends Controller
         return response()->noContent();
     }
 
+    // Ruta: GET /api/v1/me
     public function me(Request $request): UserResource
     {
         return UserResource::make($request->user());

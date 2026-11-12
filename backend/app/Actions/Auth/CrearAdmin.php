@@ -2,9 +2,11 @@
 
 namespace App\Actions\Auth;
 
+// Imports: rol (enum) y modelo de usuario.
 use App\Enums\Role;
 use App\Models\User;
 
+/** Crea una cuenta con rol admin. La usa POST /api/v1/admin/users (solo un admin puede crear otro). */
 class CrearAdmin
 {
     /** @param  array{name: string, email: string, password: string, programa?: ?string}  $datos */

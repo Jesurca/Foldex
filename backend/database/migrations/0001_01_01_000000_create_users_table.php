@@ -1,9 +1,11 @@
 <?php
 
+// Imports: clases de Laravel para definir el esquema (Migration, Blueprint, Schema).
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// Migración: Tablas base de Laravel: users (cuentas), password_reset_tokens y sessions.
 return new class extends Migration
 {
     /**

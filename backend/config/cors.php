@@ -19,6 +19,8 @@ return [
 
     'allowed_methods' => ['*'],
 
+    // Orígenes externos que pueden llamar a la API desde el navegador (FRONTEND_URL, separados por coma). Nunca '*'.
+    // La SPA no lo necesita: está en el mismo dominio que la API.
     'allowed_origins' => array_filter(array_map('trim', explode(',', (string) env('FRONTEND_URL', 'http://localhost:5173')))),
 
     'allowed_origins_patterns' => [],

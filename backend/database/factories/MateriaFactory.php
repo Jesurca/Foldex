@@ -2,10 +2,13 @@
 
 namespace Database\Factories;
 
+// Imports: modelo Materia y la clase base Factory.
 use App\Models\Materia;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
+ * Genera materias falsas para las pruebas.
+ *
  * @extends Factory<Materia>
  */
 class MateriaFactory extends Factory

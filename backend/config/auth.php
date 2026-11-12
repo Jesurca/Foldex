@@ -114,8 +114,10 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    // Dominio de correo permitido para registrarse e iniciar sesión (solo @unab.edu.co).
     'allowed_domain' => env('ALLOWED_EMAIL_DOMAIN', 'unab.edu.co'),
 
+    // Admin por defecto que crea AdminSeeder (fabian@unab.edu.co). En local, sin ADMIN_PASSWORD usa Admin12345*.
     'admin' => [
         'name' => env('ADMIN_NAME', 'Fabián Enrique Suárez Carvajal'),
         'email' => env('ADMIN_EMAIL', 'fabian@unab.edu.co'),

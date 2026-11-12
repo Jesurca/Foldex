@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+// Imports: rol (enum), modelo User, Factory, Hash y Str.
 use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
+ * Genera usuarios falsos para las pruebas, con correo @unab.edu.co. `->admin()` crea un administrador.
+ *
  * @extends Factory<User>
  */
 class UserFactory extends Factory

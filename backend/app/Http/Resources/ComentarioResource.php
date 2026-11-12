@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+// Imports: modelo Comentario, petición y JsonResource.
 use App\Models\Comentario;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;

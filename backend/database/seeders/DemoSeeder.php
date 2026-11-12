@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+// Imports: todos los modelos que se llenan con datos de ejemplo y la clase base Seeder.
 use App\Models\Comentario;
 use App\Models\Docente;
 use App\Models\Materia;

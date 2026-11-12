@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+// Imports: factory, clase Model, relación belongsTo y borrado lógico.
 use Database\Factories\ComentarioFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/** Comentario de un usuario en un proyecto (tabla comentarios). Se borra de forma lógica (deleted_at). */
 class Comentario extends Model
 {
     /** @use HasFactory<ComentarioFactory> */

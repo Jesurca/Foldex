@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Proyectos;
 
+// Imports: FormRequest.
 use Illuminate\Foundation\Http\FormRequest;
 
+/** Validación de POST /api/v1/proyectos/{slug}/comentarios. */
 class StoreComentarioRequest extends FormRequest
 {
     public function authorize(): bool

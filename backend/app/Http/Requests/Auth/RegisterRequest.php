@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Auth;
 
+// Imports: regla del correo institucional, FormRequest y reglas de contraseña.
 use App\Http\Requests\Concerns\ValidaCorreoInstitucional;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
+/** Validación de POST /api/v1/register (solo correos @unab.edu.co). */
 class RegisterRequest extends FormRequest
 {
     use ValidaCorreoInstitucional;

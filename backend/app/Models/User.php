@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+// Imports: rol (enum), factory, relaciones, usuario autenticable de Laravel y tokens de Sanctum.
 use App\Enums\Role;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +12,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+/** Usuario (tabla users). HasApiTokens le da los tokens Bearer que usan la SPA y Claude por MCP. */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */

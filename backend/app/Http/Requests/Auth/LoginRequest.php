@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+// Imports: regla del correo institucional y FormRequest.
 use App\Http\Requests\Concerns\ValidaCorreoInstitucional;
 use Illuminate\Foundation\Http\FormRequest;
 
+/** Validación de POST /api/v1/login. */
 class LoginRequest extends FormRequest
 {
     use ValidaCorreoInstitucional;

@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+// Imports: modelos de catálogo y clases base de laravel/mcp.
 use App\Models\Docente;
 use App\Models\Materia;
 use App\Models\Tecnologia;

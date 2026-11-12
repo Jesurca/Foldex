@@ -2,6 +2,7 @@
 
 namespace App\Actions\Proyectos;
 
+// Imports: modelo Proyecto, archivo subido, transacciones y disco de archivos.
 use App\Models\Proyecto;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+// Imports: modelo Proyecto, petición, JsonResource y disco de archivos (URL de la portada).
 use App\Models\Proyecto;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Proyectos;
 
+// Imports: modelos Proyecto y User, archivo subido, transacciones y disco de archivos.
 use App\Models\Proyecto;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -9,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
+/** Publica un proyecto. La comparten POST /api/v1/proyectos (formulario web) y la herramienta MCP publicar_proyecto. */
 class PublicarProyecto
 {
     /**

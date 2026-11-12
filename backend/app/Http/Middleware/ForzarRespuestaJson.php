@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+// Imports: tipos de petición y respuesta.
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;

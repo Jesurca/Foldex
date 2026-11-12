@@ -1,9 +1,11 @@
 <?php
 
+// Imports: clases de Laravel para definir el esquema (Migration, Blueprint, Schema).
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+// Migración: Tablas de la cola de trabajos de Laravel (jobs, job_batches, failed_jobs).
 return new class extends Migration
 {
     /**

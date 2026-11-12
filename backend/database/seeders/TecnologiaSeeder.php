@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+// Imports: modelo Tecnologia y clase Seeder.
 use App\Models\Tecnologia;
 use Illuminate\Database\Seeder;
 
+/** Catálogo inicial de tecnologías que se pueden elegir al publicar. */
 class TecnologiaSeeder extends Seeder
 {
     public function run(): void

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+// Imports: modelos relacionados y la clase base Factory.
 use App\Models\Docente;
 use App\Models\Materia;
 use App\Models\Proyecto;
@@ -9,6 +10,8 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
+ * Genera proyectos falsos para las pruebas (crea también autor, materia y docente).
+ *
  * @extends Factory<Proyecto>
  */
 class ProyectoFactory extends Factory

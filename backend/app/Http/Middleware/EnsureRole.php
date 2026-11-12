@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+// Imports: rol (enum), excepciones 401/403 y tipos de petición/respuesta.
 use App\Enums\Role;
 use Closure;
 use Illuminate\Auth\Access\AuthorizationException;

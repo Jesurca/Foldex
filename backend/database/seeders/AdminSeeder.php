@@ -2,12 +2,14 @@
 
 namespace Database\Seeders;
 
+// Imports: rol (enum), modelo User, clase Seeder y utilidades.
 use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use RuntimeException;
 
+/** Crea o actualiza el admin por defecto (ADMIN_EMAIL, hoy fabian@unab.edu.co). */
 class AdminSeeder extends Seeder
 {
     public function run(): void

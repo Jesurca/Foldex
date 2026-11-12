@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+// Imports: controlador base, modelo Proyecto, tipos HTTP y consultas directas a la tabla likes.
 use App\Http\Controllers\Controller;
 use App\Models\Proyecto;
 use Illuminate\Http\JsonResponse;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\DB;
  */
 class LikeController extends Controller
 {
+    // Ruta: POST /api/v1/proyectos/{slug}/like
     public function store(Request $request, Proyecto $proyecto): JsonResponse
     {
         // La hora del like la pone Laravel (UTC, la misma zona que usa el ranking) y no la sesión de
@@ -27,6 +29,7 @@ class LikeController extends Controller
         return $this->estado($proyecto, true);
     }
 
+    // Ruta: DELETE /api/v1/proyectos/{slug}/like
     public function destroy(Request $request, Proyecto $proyecto): JsonResponse
     {
         $proyecto->likes()->detach($request->user()->id);

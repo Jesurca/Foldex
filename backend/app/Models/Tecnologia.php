@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+// Imports: factory, clase Model y relación belongsToMany.
 use Database\Factories\TecnologiaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+/** Tecnología del catálogo (tabla tecnologias), unida a proyectos por proyecto_tecnologia. */
 class Tecnologia extends Model
 {
     /** @use HasFactory<TecnologiaFactory> */

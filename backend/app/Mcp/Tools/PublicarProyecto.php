@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+// Imports: Actions compartidas con la API, reglas de StoreProyectoRequest, modelos, validación, límite de peticiones y clases base de laravel/mcp.
 use App\Actions\Proyectos\DescargarPortada;
 use App\Actions\Proyectos\PublicarProyecto as AccionPublicar;
 use App\Actions\Proyectos\ResolverCatalogos;
