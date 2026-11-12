@@ -3,26 +3,32 @@
 Bitácora de cada paso del backend: qué se hizo, por qué, cómo probarlo y el commit asociado.
 
 ## Estructura de carpetas relevante
+Desde el Paso 9 el código está separado en `backend/` y `frontend/` dentro del mismo proyecto Laravel (ver Paso 9).
 
 ```
-app/
-  Actions/Auth/            ← lógica de negocio reutilizable (API y MCP)
-  Enums/Role.php           ← roles estudiante/admin
-  Http/Controllers/Api/V1/ ← controladores versionados
-  Http/Middleware/EnsureRole.php
-  Http/Requests/           ← FormRequests (validación)
-  Http/Resources/          ← API Resources (contrato JSON)
-  Models/                  ← User, Materia, Docente, Tecnologia, Proyecto, Comentario
-config/auth.php            ← allowed_domain (ALLOWED_EMAIL_DOMAIN)
-config/cors.php            ← orígenes desde FRONTEND_URL
-database/migrations/ factories/ seeders/
-lang/es/                   ← mensajes de validación en español
-resources/js/              ← interfaz React (SPA) que consume /api/v1 — ver Paso 5
-resources/views/app.blade.php ← HTML base de la SPA
-routes/api.php             ← /api/v1/...
-routes/web.php             ← cualquier otra ruta devuelve la SPA
-tests/Feature/             ← pruebas Pest contra PostgreSQL
-docker-compose.yml         ← PostgreSQL local
+backend/                       ← todo lo de Laravel
+  app/Actions/                 ← lógica de negocio reutilizable (API y MCP)
+  app/Enums/Role.php           ← roles estudiante/admin
+  app/Http/Controllers/Api/V1/ ← controladores versionados
+  app/Http/Middleware/         ← EnsureRole (role:admin), ForzarRespuestaJson
+  app/Http/Requests/           ← FormRequests (validación)
+  app/Http/Resources/          ← API Resources (contrato JSON)
+  app/Mcp/                     ← servidor MCP (Servers/ProyectosServer + Tools/) — ver Paso 6
+  app/Models/  app/Policies/   ← modelos Eloquent y permisos por registro
+  config/                      ← auth.php (allowed_domain, admin), cors.php, services.php (github), view.php
+  database/                    ← migrations/ factories/ seeders/
+  lang/es/                     ← mensajes de validación en español
+  routes/api.php               ← /api/v1/...
+  routes/ai.php                ← /mcp/proyectos (servidor MCP)
+  routes/web.php               ← cualquier otra ruta devuelve la SPA
+frontend/                      ← interfaz React (SPA) — ver Paso 5
+  js/                          ← app.tsx, routes/, components/, lib/, test/
+  css/app.css                  ← Tailwind v4 y tema
+  views/app.blade.php          ← HTML base de la SPA
+  contexto_img/                ← fotos del carrusel de la portada — ver Paso 8
+bootstrap/app.php              ← arranque: rutas, middleware, errores y rutas de backend/
+tests/Feature/                 ← pruebas Pest contra PostgreSQL (Pest exige tests/ en la raíz)
+docker-compose.yml             ← PostgreSQL local
 ```
 
 ---
@@ -231,7 +237,7 @@ routes/web.php                 ← cualquier ruta que no sea api/ devuelve la SP
   - **Backend:** columna `proyectos.portada_path` (nullable). `StoreProyectoRequest` exige `image` + `mimes:jpg,jpeg,png,webp` (sin SVG, que puede llevar scripts), máximo 2 MB (el `upload_max_filesize` por defecto de PHP) y al menos 300 × 150 px. `PublicarProyecto` la guarda con `store('portadas', 'public')`: nombre aleatorio y extensión según el contenido, no según lo que mande el usuario. Si falla la transacción, borra el archivo. `ProyectoResource` expone `portada_url` (URL pública del disco `public`).
   - **Pendiente:** al ser *soft delete*, borrar un proyecto no borra su foto. No se redimensiona en el servidor porque la extensión GD no está instalada.
   - **Requisito:** `php artisan storage:link` (crea `public/storage`, ya ignorado en git). Sin ese enlace, las fotos dan 404.
-- **"Conecta con tu IA":** el servidor MCP aún no existe en el backend. La sección se dejó como estaba: copia el contexto público del proyecto e indica "Próximamente".
+- **"Conecta con tu IA":** en este paso el servidor MCP aún no existía y la sección solo copiaba el contexto. En el Paso 6 se reemplazó por el botón "Conéctate por MCP".
 
 **Comandos:**
 ```bash
@@ -254,6 +260,90 @@ php artisan serve    # http://localhost:8000
 **Nota de Windows:** al probar con `curl` o PowerShell 5.1, los acentos escritos directamente en `-d` no se envían en UTF-8 y Laravel recibe el JSON vacío (422 con "obligatorio" en todo). Usa `--data-binary @archivo.json` o escapes `ó`. El navegador siempre envía UTF-8.
 
 **Commits:** `feat(front): integrar el frontend de Lovable en Laravel como SPA` · `feat(front): cliente API, tipos y servicios` · `feat(front): login, registro y sesión con Sanctum` · `feat(front): catálogo conectado a la API` · `feat(front): detalle, likes y comentarios` · `feat(front): publicar proyecto` · `feat(front): perfil con publicaciones y me gusta` · `feat(front): panel de administración` · `docs: integración del frontend con la API`
+
+---
+
+## Paso 6 — Servidor MCP: publicar desde Claude
+**Qué se hizo:** un servidor MCP (Model Context Protocol) en `POST /mcp/proyectos` con el paquete oficial `laravel/mcp`, y el botón **"Conéctate por MCP"** en la web. El estudiante conecta Claude una vez y luego publica con un mensaje: solo da el **enlace del repositorio** y el **nombre del docente**. El **publicante** es la cuenta dueña del token. Claude lee el repositorio y completa el título, la descripción, la materia, las tecnologías y la foto.
+
+**Herramientas MCP** (`backend/app/Mcp/Tools`):
+| Herramienta | Qué hace |
+|---|---|
+| `listar_catalogos` | Devuelve la cuenta conectada (publicante) y las materias, docentes y tecnologías válidas. Solo lectura. |
+| `leer_repositorio` | Lee un repositorio público de GitHub con su API: descripción, temas, lenguajes, README (recortado a 12 000 caracteres) y la portada sugerida (`opengraph.githubassets.com`). Solo lectura. |
+| `publicar_proyecto` | Publica a nombre del dueño del token. Recibe **nombres** (docente, materia, tecnologías) y los traduce a ids. Devuelve el enlace. |
+
+**Cómo conectarse** (lo muestra el botón, con la llave ya incluida):
+```bash
+# Claude Code
+claude mcp add --transport http proyectos-unab http://localhost:8000/mcp/proyectos --header "Authorization: Bearer <llave>"
+```
+```json
+// Claude Desktop (claude_desktop_config.json, requiere Node.js)
+{ "mcpServers": { "proyectos-unab": { "command": "npx",
+  "args": ["-y", "mcp-remote", "http://localhost:8000/mcp/proyectos", "--header", "Authorization:${AUTH_HEADER}"],
+  "env": { "AUTH_HEADER": "Bearer <llave>" } } } }
+```
+Prompt de ejemplo: *"Publica mi proyecto en el Repositorio de Proyectos UNAB. Repositorio: https://github.com/usuario/mi-proyecto. Docente: Fabián Suárez"*.
+
+**Por qué:**
+- **Mismo token de Sanctum que la web.** El botón llama a `POST /api/v1/me/tokens` con el nombre `Claude (MCP)`. La ruta MCP usa `auth:sanctum`, así que el autor siempre sale del token y nunca de lo que escriba Claude. Desde el mismo diálogo se revocan las conexiones (`DELETE /me/tokens/{id}`).
+- **Mismas reglas que el formulario.** `publicar_proyecto` valida con las reglas de `StoreProyectoRequest` y guarda con la Action `PublicarProyecto`. Lo único nuevo es `ResolverCatalogos`: compara nombres sin tildes ni mayúsculas ("fabian suarez" → "Fabián Enrique Suárez Carvajal"). Si hay cero o varias coincidencias, responde con las opciones válidas para que Claude pregunte (no adivina). Las tecnologías que no están en el catálogo se omiten y se avisan. Si falta el periodo, se usa el actual (enero–junio → `-1`, julio–diciembre → `-2`).
+- **Foto de portada.** Claude manda `portada_url`. Si no la manda y el repositorio es de GitHub, se usa su imagen social. `DescargarPortada` solo acepta `https`, exige que el host resuelva a una **IP pública** (para que nadie use el servidor para consultar la red interna: SSRF), y limita a 2 MB y 10 s. La imagen pasa por las mismas reglas de `portada`. Si falla, el proyecto se publica sin foto y se avisa.
+- **Límites:** `throttle:60,1` para mensajes MCP y 10 publicaciones por minuto por usuario (igual que la web).
+- **¿Por qué no se conecta desde claude.ai (web)?** Los conectores de claude.ai necesitan una URL pública con HTTPS y OAuth. En local (`localhost`) solo se puede con Claude Code o Claude Desktop. Al desplegar en Azure se puede agregar OAuth (laravel/mcp lo soporta con Passport).
+- `routes/ai.php` se registra desde `bootstrap/app.php` y la ruta comodín de la SPA excluye `mcp/`. Los errores 401/403/404 de `/mcp` también salen en JSON y en español.
+- `GITHUB_TOKEN` (opcional, en `.env`) sube el límite de la API de GitHub de 60 a 5000 consultas por hora.
+
+**Archivos:** `backend/app/Mcp/Servers/ProyectosServer.php`, `backend/app/Mcp/Tools/{ListarCatalogos,LeerRepositorio,PublicarProyecto}.php`, `backend/app/Actions/Proyectos/{ResolverCatalogos,DescargarPortada}.php`, `backend/routes/ai.php`, `backend/config/services.php`, `frontend/js/components/ConectarMcp.tsx`, `tests/Feature/McpTest.php`, `frontend/js/test/mcp.test.ts`.
+**Cómo probar:** `./vendor/bin/pest --filter=Mcp` (16 pruebas: token obligatorio, publicar resolviendo nombres, portada, SSRF, docente inexistente y lectura de GitHub simulada). Prueba manual con el servidor real: `initialize` → 200, `listar_catalogos` devuelve la cuenta conectada y sin token → 401.
+**Commits:** `build: instalar laravel/mcp para el servidor MCP` · `feat(mcp): servidor MCP para publicar proyectos desde Claude` · `feat(front): botón Conéctate por MCP y edición de proyectos para el admin`
+
+---
+
+## Paso 7 — Perfiles: admin edita y borra todo; estudiante publica y borra lo suyo
+**Qué se hizo:**
+| Acción | Estudiante | Admin |
+|---|---|---|
+| Publicar (web o MCP) | ✔ | ✔ |
+| Borrar su propio proyecto | ✔ | ✔ |
+| Borrar proyectos ajenos | ✘ (403) | ✔ |
+| Editar cualquier proyecto | ✘ (403) | ✔ `PUT /api/v1/proyectos/{slug}` |
+| Panel `/administracion` | ✘ | ✔ |
+
+- `ProyectoPolicy::update` ahora es **solo admin**. Antes también lo permitía al dueño, aunque no había endpoint de edición. `ProyectoResource` expone `can.update` y el frontend muestra **Editar** solo si viene en `true`.
+- Endpoint nuevo `PUT /api/v1/proyectos/{slug}` (`UpdateProyectoRequest` + Action `ActualizarProyecto`): tiene las mismas reglas que publicar, más `quitar_portada`. No cambia el autor, el slug (los enlaces compartidos siguen funcionando) ni la fecha. Si llega una foto nueva, borra la anterior **después** de guardar en la base de datos. PHP no lee `multipart/form-data` en `PUT`, por eso, con foto, el frontend envía `POST` con `_method=PUT` (Laravel lo trata como `PUT`).
+- Pantalla `/editar/$id` (solo admin) que reutiliza el formulario de publicar (`FormularioProyecto.tsx`, extraído de `publicar.tsx`). El botón **Editar** aparece en el detalle y en el panel de administración.
+- **Admin por defecto: `fabian@unab.edu.co`** (`ADMIN_EMAIL`, nombre en `ADMIN_NAME`). En local, si `ADMIN_PASSWORD` está vacío, la contraseña es `Admin12345*`. Se aplica con `php artisan db:seed --class=AdminSeeder`. El seeder no le quita el rol a admins anteriores: en la BD local `admin@unab.edu.co` sigue siendo admin hasta que se elimine desde el panel.
+- El registro de estudiantes no cambia: solo correos `@unab.edu.co` (`ALLOWED_EMAIL_DOMAIN`) y siempre con rol `estudiante`.
+
+**Pruebas:** policy (estudiante no edita y admin sí), `PUT` del admin sin cambiar autor ni slug, 403 al autor, reemplazo y eliminación de portada, y el seeder crea a fabian como admin.
+**Commit:** `feat(api): solo el admin edita proyectos; fabian@unab.edu.co es el admin por defecto`
+
+---
+
+## Paso 8 — Carrusel de fotos en la portada
+**Qué se hizo:** la foto grande del inicio ahora es un carrusel (`frontend/js/components/CarruselHero.tsx`) con las fotos de **`frontend/contexto_img/`**.
+- Para cambiar las fotos basta con agregar o quitar archivos `.jpg/.png/.webp` en esa carpeta y compilar (`npm run build`). Vite las encuentra con `import.meta.glob`, les pone un hash para la caché y las ordena por nombre de archivo. Si la carpeta queda vacía, se usa la ilustración del campus.
+- Cambia de foto cada 6 s con transición suave. Se pausa con el mouse encima o con el foco del teclado, y no avanza solo si el sistema pide "reducir movimiento". Las flechas y los puntos van abajo, en el centro, para no tapar el texto de bienvenida.
+- Las fotos actuales son verticales y el banner es horizontal, así que se recortan (centradas al 40 % para dejar ver las caras). Conviene usar fotos horizontales (≈ 1600 × 600 o más).
+**Commit:** `feat(front): carrusel de fotos de contexto_img en la portada`
+
+---
+
+## Paso 9 — Carpetas `backend/` y `frontend/` y comentarios en cada archivo
+**Qué se hizo:** se separó el proyecto en `backend/` (app, config, database, lang, routes) y `frontend/` (js, css, views, contexto_img) **sin dividirlo en dos aplicaciones**: sigue siendo un solo Laravel que sirve la SPA y la API desde el mismo origen. Además, cada archivo tiene comentarios en español: para qué sirve el archivo, qué se importa, cada sección o componente y, en los controladores, la ruta HTTP que atiende cada método (`// Ruta: GET /api/v1/proyectos`).
+
+**Cómo se hizo sin romper nada:**
+- `bootstrap/app.php`: las rutas apuntan a `backend/routes/*` y al final se llama `useAppPath`, `useConfigPath`, `useDatabasePath` y `useLangPath` con las carpetas de `backend/`.
+- `composer.json`: `App\` → `backend/app/`, `Database\Factories\` y `Database\Seeders\` → `backend/database/...` (`composer dump-autoload`). Así `php artisan make:*` también crea los archivos en `backend/`.
+- `backend/config/view.php`: las vistas Blade se buscan en `frontend/views`.
+- `vite.config.js`, `vitest.config.ts` y `tsconfig.json`: entradas, alias `@` y rutas de TanStack Router apuntan a `frontend/js`. `@source "../js"` de Tailwind no cambió porque la ruta relativa es la misma.
+- Se quedan en la raíz: `bootstrap/`, `public/`, `storage/`, `vendor/`, `node_modules/` (los exigen Laravel o npm) y `tests/` (Pest busca `tests/Pest.php` en la raíz; moverlo obligaría a usar `--test-directory` en cada comando).
+- Los comandos de siempre no cambian: `php artisan serve`, `npm run dev/build`, `./vendor/bin/pest --testsuite=Feature`, `npm test`.
+
+**Verificación:** `pest` 92 verdes · `npm test` 25 verdes · `npm run typecheck` sin errores · `npm run build` correcto · `php artisan route:list` muestra `/api/v1/*`, `/mcp/proyectos` y la SPA.
+**Commits:** `refactor: separar el proyecto en backend/ y frontend/` · `docs(back): comentar cada archivo del backend…` · `docs(front): comentar cada archivo del frontend…`
 
 ---
 
@@ -342,3 +432,16 @@ Es solo experiencia de usuario: evita mostrar acciones que van a fallar. La segu
 
 **¿Qué es una actualización optimista y cuándo conviene?**
 Es cambiar la interfaz antes de que responda el servidor (el corazón se pinta al instante) y corregir con la respuesta real, o revertir si hay error. Conviene en acciones frecuentes, baratas y casi siempre exitosas, como un like. No conviene en operaciones críticas como publicar o borrar.
+
+### MCP y perfiles
+**¿Qué es MCP?**
+Model Context Protocol: un estándar para que un asistente de IA (Claude) use herramientas de una aplicación. El servidor declara herramientas con nombre, descripción y esquema JSON de entrada, y Claude decide cuándo llamarlas. Aquí se habla JSON-RPC por HTTP en `POST /mcp/proyectos`.
+
+**¿Cómo se sabe quién publica desde Claude?**
+Por el token Bearer de Sanctum con el que se configuró la conexión: `auth:sanctum` carga al usuario y `publicar_proyecto` usa `$request->user()` como autor. Lo que escriba Claude nunca decide el autor. Revocar el token corta la conexión.
+
+**¿Por qué el servidor no descarga cualquier URL de imagen?**
+Porque una URL controlada por un atacante podría apuntar a la red interna del servidor (SSRF: `127.0.0.1`, `169.254.169.254` en la nube…). Se exige `https`, IP pública, tamaño máximo y tiempo límite, y luego se valida que de verdad sea una imagen.
+
+**¿Por qué editar es solo del admin y no del dueño?**
+Es una decisión del equipo: el estudiante publica y puede borrar lo suyo; corregir publicaciones ya visibles es moderación. La regla vive en `ProyectoPolicy::update`, así que la API responde 403 aunque alguien llame al endpoint sin pasar por la interfaz.
