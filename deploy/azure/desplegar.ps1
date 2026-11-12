@@ -21,7 +21,14 @@ $php84 = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Directory 
 if ($php84) { $env:Path = "$($php84.FullName);$env:Path" }
 
 function Paso([string]$texto) { Write-Host "`n==> $texto" -ForegroundColor Cyan }
-function Ejecutar([scriptblock]$bloque) { & $bloque; if ($LASTEXITCODE -ne 0) { throw "Falló: $bloque" } }
+# Composer, npm y az escriben progreso en stderr: en PowerShell 5.1 eso no debe cortar el script,
+# así que se decide solo por el código de salida.
+function Ejecutar([scriptblock]$bloque) {
+    $anterior = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try { & $bloque 2>&1 | ForEach-Object { "$_" } } finally { $ErrorActionPreference = $anterior }
+    if ($LASTEXITCODE -ne 0) { throw "Falló: $bloque" }
+}
 
 Paso 'Copia limpia del último commit'
 if (Test-Path $trabajo) { Remove-Item -Recurse -Force $trabajo }
@@ -46,7 +53,8 @@ try {
 
     Paso 'Empaquetando'
     if (Test-Path $zip) { Remove-Item -Force $zip }
-    Ejecutar { tar -a -c -f $zip * .[!.]* }
+    $entradas = Get-ChildItem -Force -Name   # PowerShell no expande comodines para programas externos
+    Ejecutar { tar -a -c -f $zip @entradas }
 }
 finally {
     Pop-Location
