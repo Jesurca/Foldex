@@ -1,0 +1,1547 @@
+{
+    "info": {
+        "name": "ProyectoBackend",
+        "description": "API de Foldex (Repositorio de Proyectos UNAB): Laravel + PostgreSQL + Sanctum.\n\nEjecuta la colección completa en orden (Run collection) con el entorno **Foldex local** y el servidor encendido (`php artisan serve`). Cada petición guarda en variables lo que necesita la siguiente y la carpeta 11 borra todo lo que se creó.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token_est}}",
+                "type": "string"
+            }
+        ]
+    },
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "if (!pm.request.headers.has('Accept')) pm.request.headers.add({ key: 'Accept', value: 'application/json' });"
+                ]
+            }
+        }
+    ],
+    "item": [
+        {
+            "name": "00 · Salud",
+            "description": "Comprueba que la API responde.",
+            "item": [
+                {
+                    "name": "Ping",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/ping",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('status ok y versión v1', () => { const j = pm.response.json(); pm.expect(j.status).to.eql('ok'); pm.expect(j.version).to.eql('v1'); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "01 · Autenticación",
+            "description": "Registro solo con @unab.edu.co, login, /me y errores 401/422.",
+            "item": [
+                {
+                    "name": "Registro estudiante",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/register",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"name\":\"Estudiante Postman\",\"email\":\"{{est_email}}\",\"password\":\"{{est_password}}\",\"password_confirmation\":\"{{est_password}}\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('Rol estudiante y token', () => { pm.expect(j.user.role).to.eql('estudiante'); pm.expect(j.token).to.be.a('string'); });",
+                                    "pm.collectionVariables.set('token_est', j.token);",
+                                    "pm.collectionVariables.set('est_id', j.user.id);"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.collectionVariables.set('est_email', 'postman.' + Date.now() + '@unab.edu.co');"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Registro con correo externo (422)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/register",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"name\":\"Externo\",\"email\":\"alguien@gmail.com\",\"password\":\"secreto123\",\"password_confirmation\":\"secreto123\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 422', () => pm.response.to.have.status(422));",
+                                    "pm.test('Error en email', () => pm.expect(pm.response.json().errors).to.have.property('email'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Registro pidiendo rol admin (se ignora)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/register",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"name\":\"Intruso Postman\",\"email\":\"{{intruso_email}}\",\"password\":\"secreto123\",\"password_confirmation\":\"secreto123\",\"role\":\"admin\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Sigue siendo estudiante', () => pm.expect(pm.response.json().user.role).to.eql('estudiante'));",
+                                    "pm.collectionVariables.set('intruso_id', pm.response.json().user.id);"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.collectionVariables.set('intruso_email', 'intruso.' + Date.now() + '@unab.edu.co');"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Login admin",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/login",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"email\":\"{{admin_email}}\",\"password\":\"{{admin_password}}\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "const j = pm.response.json();",
+                                    "pm.test('Es admin', () => pm.expect(j.user.role).to.eql('admin'));",
+                                    "pm.collectionVariables.set('token_admin', j.token);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Login con contraseña incorrecta (422)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/login",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"email\":\"{{est_email}}\",\"password\":\"incorrecta123\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 422', () => pm.response.to.have.status(422));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Mi usuario (/me)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/me"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Es la cuenta registrada', () => pm.expect(pm.response.json().data.email).to.eql(pm.collectionVariables.get('est_email')));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Mi usuario sin token (401)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/me",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "02 · Catálogos",
+            "description": "Materias, docentes y tecnologías (públicos). Guarda ids para publicar.",
+            "item": [
+                {
+                    "name": "Materias",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/materias",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json().data; pm.test('Hay materias', () => pm.expect(d.length).to.be.above(0));",
+                                    "pm.collectionVariables.set('materia_id', d[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Docentes",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/docentes",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json().data; pm.test('Hay docentes', () => pm.expect(d.length).to.be.above(0));",
+                                    "pm.test('No expone correos', () => pm.expect(d[0]).to.not.have.property('email'));",
+                                    "pm.collectionVariables.set('docente_id', d[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Tecnologías",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/tecnologias",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json().data; pm.test('Hay tecnologías', () => pm.expect(d.length).to.be.above(0));",
+                                    "pm.collectionVariables.set('tecnologia_id', d[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "03 · Proyectos",
+            "description": "Listar, filtrar, publicar, ver, editar (solo admin).",
+            "item": [
+                {
+                    "name": "Listar proyectos",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Paginado con meta', () => { const j = pm.response.json(); pm.expect(j).to.have.property('data'); pm.expect(j.meta).to.have.property('total'); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Ranking histórico con búsqueda",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos?rango=historico&q=a",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Filtro inválido (422)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos?orden=raro",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 422', () => pm.response.to.have.status(422));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Publicar proyecto (estudiante)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"titulo\":\"Prueba Postman {{$timestamp}}\",\"contexto\":\"Proyecto creado por la colección de Postman para comprobar la API de Foldex.\",\"materia_id\":{{materia_id}},\"docente_id\":{{docente_id}},\"periodo\":\"2026-2\",\"repositorio_url\":\"https://github.com/unab/prueba-postman\",\"video_url\":null,\"tecnologias\":[{{tecnologia_id}}]}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                                    "const p = pm.response.json().data;",
+                                    "pm.test('Autor = quien publica', () => pm.expect(p.autor.name).to.eql('Estudiante Postman'));",
+                                    "pm.test('Dueño puede borrar, no editar', () => { pm.expect(p.can.delete).to.be.true; pm.expect(p.can.update).to.be.false; });",
+                                    "pm.collectionVariables.set('slug', p.slug);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Publicar con datos inválidos (422)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"titulo\":\"X\",\"contexto\":\"corto\",\"repositorio_url\":\"http://inseguro.com\",\"tecnologias\":[]}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 422', () => pm.response.to.have.status(422));",
+                                    "pm.test('Errores por campo', () => { const e = pm.response.json().errors; ['titulo','contexto','repositorio_url','tecnologias'].forEach(k => pm.expect(e).to.have.property(k)); });"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Publicar sin token (401)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"titulo\":\"Prueba Postman {{$timestamp}}\",\"contexto\":\"Proyecto creado por la colección de Postman para comprobar la API de Foldex.\",\"materia_id\":{{materia_id}},\"docente_id\":{{docente_id}},\"periodo\":\"2026-2\",\"repositorio_url\":\"https://github.com/unab/prueba-postman\",\"video_url\":null,\"tecnologias\":[{{tecnologia_id}}]}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Detalle del proyecto",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos/{{slug}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Es el proyecto publicado', () => pm.expect(pm.response.json().data.slug).to.eql(pm.collectionVariables.get('slug')));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Detalle inexistente (404)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos/no-existe-123456",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 404', () => pm.response.to.have.status(404));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Editar como estudiante (403)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos/{{slug}}",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"titulo\":\"Prueba Postman {{$timestamp}}\",\"contexto\":\"Proyecto creado por la colección de Postman para comprobar la API de Foldex.\",\"materia_id\":{{materia_id}},\"docente_id\":{{docente_id}},\"periodo\":\"2026-2\",\"repositorio_url\":\"https://github.com/unab/prueba-postman\",\"video_url\":null,\"tecnologias\":[{{tecnologia_id}}]}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Editar como admin",
+                    "request": {
+                        "method": "PUT",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos/{{slug}}",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"titulo\":\"Título editado por el admin\",\"contexto\":\"Proyecto creado por la colección de Postman para comprobar la API de Foldex.\",\"materia_id\":{{materia_id}},\"docente_id\":{{docente_id}},\"periodo\":\"2026-2\",\"repositorio_url\":\"https://github.com/unab/prueba-postman\",\"video_url\":null,\"tecnologias\":[{{tecnologia_id}}]}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "const p = pm.response.json().data;",
+                                    "pm.test('Título cambiado, slug igual', () => { pm.expect(p.titulo).to.eql('Título editado por el admin'); pm.expect(p.slug).to.eql(pm.collectionVariables.get('slug')); });"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "04 · Me gusta",
+            "description": "Dar y quitar like son idempotentes.",
+            "item": [
+                {
+                    "name": "Dar me gusta",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos/{{slug}}/like"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('liked = true, 1 like', () => pm.expect(pm.response.json()).to.eql({ liked: true, likes_count: 1 }));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Dar me gusta otra vez (no suma)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos/{{slug}}/like"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Sigue en 1', () => pm.expect(pm.response.json().likes_count).to.eql(1));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Quitar me gusta",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos/{{slug}}/like"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('liked = false, 0 likes', () => pm.expect(pm.response.json()).to.eql({ liked: false, likes_count: 0 }));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "05 · Comentarios",
+            "description": "Crear y listar comentarios de un proyecto.",
+            "item": [
+                {
+                    "name": "Comentar",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos/{{slug}}/comentarios",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"contenido\":\"Comentario de prueba desde Postman.\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                                    "pm.collectionVariables.set('comentario_id', pm.response.json().data.id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Comentario vacío (422)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos/{{slug}}/comentarios",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"contenido\":\"\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 422', () => pm.response.to.have.status(422));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Listar comentarios",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos/{{slug}}/comentarios",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Aparece el comentario', () => pm.expect(pm.response.json().data.map(c => c.id)).to.include(Number(pm.collectionVariables.get('comentario_id'))));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "06 · Mi espacio",
+            "description": "Mis publicaciones y mis me gusta.",
+            "item": [
+                {
+                    "name": "Mis proyectos",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/me/proyectos"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Incluye el proyecto publicado', () => pm.expect(pm.response.json().data.map(p => p.slug)).to.include(pm.collectionVariables.get('slug')));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Mis me gusta",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/me/likes"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "07 · Tokens personales (conexión MCP)",
+            "description": "Las llaves que usa \"Conéctate por MCP\".",
+            "item": [
+                {
+                    "name": "Crear token",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/me/tokens",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"nombre\":\"Claude (MCP)\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 201', () => pm.response.to.have.status(201));",
+                                    "pm.collectionVariables.set('token_mcp', pm.response.json().token);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Listar tokens",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/me/tokens"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "const t = pm.response.json().data.find(x => x.nombre === 'Claude (MCP)');",
+                                    "pm.test('Aparece el token MCP', () => pm.expect(t).to.exist);",
+                                    "pm.collectionVariables.set('token_mcp_id', t.id);"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "08 · Servidor MCP",
+            "description": "JSON-RPC en /mcp/proyectos con el token personal.",
+            "item": [
+                {
+                    "name": "MCP initialize",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json, text/event-stream"
+                            }
+                        ],
+                        "url": "{{base_url}}/mcp/proyectos",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{token_mcp}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{},\"clientInfo\":{\"name\":\"postman\",\"version\":\"1\"}}}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Servidor Foldex', () => pm.expect(pm.response.json().result.serverInfo.name).to.eql('Foldex'));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "MCP tools/list",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json, text/event-stream"
+                            }
+                        ],
+                        "url": "{{base_url}}/mcp/proyectos",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{token_mcp}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Tres herramientas', () => pm.expect(pm.response.json().result.tools.map(t => t.name)).to.eql(['listar_catalogos', 'leer_repositorio', 'publicar_proyecto']));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "MCP listar_catalogos",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json, text/event-stream"
+                            }
+                        ],
+                        "url": "{{base_url}}/mcp/proyectos",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{token_mcp}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"listar_catalogos\",\"arguments\":{}}}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Publicante = cuenta del token', () => pm.expect(pm.response.json().result.content[0].text).to.include(pm.collectionVariables.get('est_email')));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "MCP sin token (401)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json, text/event-stream"
+                            }
+                        ],
+                        "url": "{{base_url}}/mcp/proyectos",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/list\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Revocar token MCP",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/me/tokens/{{token_mcp_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 204', () => pm.response.to.have.status(204));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "MCP con token revocado (401)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json, text/event-stream"
+                            }
+                        ],
+                        "url": "{{base_url}}/mcp/proyectos",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{token_mcp}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"tools/list\"}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "09 · Carrusel",
+            "description": "Fotos leídas en vivo de frontend/contexto_img.",
+            "item": [
+                {
+                    "name": "Lista de fotos",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/carrusel",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json().data; pm.test('Es una lista', () => pm.expect(d).to.be.an('array'));",
+                                    "if (d.length) pm.collectionVariables.set('foto_carrusel', d[0].nombre);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Primera foto",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "image/*"
+                            }
+                        ],
+                        "url": "{{base_url}}/api/v1/carrusel/{{foto_carrusel}}",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Es una imagen', () => pm.expect(pm.response.headers.get('Content-Type')).to.match(/^image\\//));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Archivo fuera de la carpeta (404)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/carrusel/..%2F..%2F.env",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 404', () => pm.response.to.have.status(404));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "10 · Administración",
+            "description": "Solo rol admin (middleware role:admin).",
+            "item": [
+                {
+                    "name": "Usuarios como estudiante (403)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/admin/users"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 403', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Usuarios como admin",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/admin/users?q=postman",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Encuentra la cuenta de prueba', () => pm.expect(pm.response.json().data.map(u => u.email)).to.include(pm.collectionVariables.get('est_email')));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Proyectos como admin",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/admin/proyectos",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 200', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "11 · Limpieza",
+            "description": "Borra lo creado por la colección para no dejar datos de prueba.",
+            "item": [
+                {
+                    "name": "Borrar comentario (autor)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/comentarios/{{comentario_id}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 204', () => pm.response.to.have.status(204));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Borrar proyecto (dueño)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos/{{slug}}"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 204', () => pm.response.to.have.status(204));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Proyecto borrado ya no existe (404)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/proyectos/{{slug}}",
+                        "auth": {
+                            "type": "noauth"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 404', () => pm.response.to.have.status(404));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Cerrar sesión (estudiante)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/logout"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 204', () => pm.response.to.have.status(204));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Token tras cerrar sesión (401)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/me"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin borra la cuenta de prueba",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/admin/users/{{est_id}}",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 204', () => pm.response.to.have.status(204));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin borra la cuenta \"intruso\"",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/admin/users/{{intruso_id}}",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 204', () => pm.response.to.have.status(204));"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Cerrar sesión (admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": "{{base_url}}/api/v1/logout",
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{token_admin}}",
+                                    "type": "string"
+                                }
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Responde 204', () => pm.response.to.have.status(204));"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "token_est",
+            "value": ""
+        },
+        {
+            "key": "token_admin",
+            "value": ""
+        },
+        {
+            "key": "token_mcp",
+            "value": ""
+        },
+        {
+            "key": "token_mcp_id",
+            "value": ""
+        },
+        {
+            "key": "est_email",
+            "value": ""
+        },
+        {
+            "key": "est_id",
+            "value": ""
+        },
+        {
+            "key": "intruso_email",
+            "value": ""
+        },
+        {
+            "key": "intruso_id",
+            "value": ""
+        },
+        {
+            "key": "materia_id",
+            "value": ""
+        },
+        {
+            "key": "docente_id",
+            "value": ""
+        },
+        {
+            "key": "tecnologia_id",
+            "value": ""
+        },
+        {
+            "key": "slug",
+            "value": ""
+        },
+        {
+            "key": "comentario_id",
+            "value": ""
+        },
+        {
+            "key": "foto_carrusel",
+            "value": ""
+        }
+    ]
+}
