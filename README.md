@@ -6,6 +6,16 @@ Aplicación donde los estudiantes de Ingeniería de Sistemas de la UNAB publican
 - **Servidor MCP**: `/mcp/proyectos`, para publicar desde Claude con el botón "Conéctate por MCP".
 - **Interfaz web**: React 19 + TanStack Router/Query + Tailwind v4, servida por Laravel como SPA (mismo origen que la API).
 
+## Flujo de la página
+1. **Inicio (`/`)**: carrusel, ranking de los proyectos con más "me gusta" (diario, semanal, mensual, anual o de siempre), búsqueda y filtros por semestre, materia, docente y tecnología. Se ve sin cuenta.
+2. **Ingresar / registrarse**: solo correos `@unab.edu.co`. El servidor entrega un token que la página guarda y envía en cada petición.
+3. **Detalle (`/proyectos/{slug}`)**: portada o video, contexto, tecnologías, enlace al repositorio, "me gusta" y comentarios.
+4. **Publicar (`/publicar`)**: formulario con foto de portada opcional, o desde Claude con el botón "Conéctate por MCP" (solo se da el repositorio y el docente).
+5. **Mi espacio (`/mi-espacio`)**: mis publicaciones y los proyectos que me gustan.
+6. **Administración (`/administracion`, solo admin)**: editar o eliminar cualquier proyecto y gestionar cuentas.
+
+Por dentro: React llama a `/api/v1` → Laravel valida (FormRequest), revisa permisos (Policies y `role:admin`) → guarda en PostgreSQL → responde JSON.
+
 ## Estructura
 Es un solo proyecto Laravel, separado en dos carpetas:
 ```
