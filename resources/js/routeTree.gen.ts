@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdministracionRouteImport } from './routes/administracion'
 import { Route as MiEspacioRouteImport } from './routes/mi-espacio'
 import { Route as PublicarRouteImport } from './routes/publicar'
+import { Route as EditarIdRouteImport } from './routes/editar.$id'
 import { Route as ProyectosIdRouteImport } from './routes/proyectos.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -35,6 +36,11 @@ const PublicarRoute = PublicarRouteImport.update({
   path: '/publicar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EditarIdRoute = EditarIdRouteImport.update({
+  id: '/editar/$id',
+  path: '/editar/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProyectosIdRoute = ProyectosIdRouteImport.update({
   id: '/proyectos/$id',
   path: '/proyectos/$id',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/administracion': typeof AdministracionRoute
   '/mi-espacio': typeof MiEspacioRoute
   '/publicar': typeof PublicarRoute
+  '/editar/$id': typeof EditarIdRoute
   '/proyectos/$id': typeof ProyectosIdRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/administracion': typeof AdministracionRoute
   '/mi-espacio': typeof MiEspacioRoute
   '/publicar': typeof PublicarRoute
+  '/editar/$id': typeof EditarIdRoute
   '/proyectos/$id': typeof ProyectosIdRoute
 }
 export interface FileRoutesById {
@@ -61,20 +69,33 @@ export interface FileRoutesById {
   '/administracion': typeof AdministracionRoute
   '/mi-espacio': typeof MiEspacioRoute
   '/publicar': typeof PublicarRoute
+  '/editar/$id': typeof EditarIdRoute
   '/proyectos/$id': typeof ProyectosIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/administracion' | '/mi-espacio' | '/publicar' | '/proyectos/$id'
+    | '/'
+    | '/administracion'
+    | '/mi-espacio'
+    | '/publicar'
+    | '/editar/$id'
+    | '/proyectos/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/administracion' | '/mi-espacio' | '/publicar' | '/proyectos/$id'
+  to:
+    | '/'
+    | '/administracion'
+    | '/mi-espacio'
+    | '/publicar'
+    | '/editar/$id'
+    | '/proyectos/$id'
   id:
     | '__root__'
     | '/'
     | '/administracion'
     | '/mi-espacio'
     | '/publicar'
+    | '/editar/$id'
     | '/proyectos/$id'
   fileRoutesById: FileRoutesById
 }
@@ -83,6 +104,7 @@ export interface RootRouteChildren {
   AdministracionRoute: typeof AdministracionRoute
   MiEspacioRoute: typeof MiEspacioRoute
   PublicarRoute: typeof PublicarRoute
+  EditarIdRoute: typeof EditarIdRoute
   ProyectosIdRoute: typeof ProyectosIdRoute
 }
 
@@ -116,6 +138,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/editar/$id': {
+      id: '/editar/$id'
+      path: '/editar/$id'
+      fullPath: '/editar/$id'
+      preLoaderRoute: typeof EditarIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/proyectos/$id': {
       id: '/proyectos/$id'
       path: '/proyectos/$id'
@@ -131,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdministracionRoute: AdministracionRoute,
   MiEspacioRoute: MiEspacioRoute,
   PublicarRoute: PublicarRoute,
+  EditarIdRoute: EditarIdRoute,
   ProyectosIdRoute: ProyectosIdRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { Search, ShieldCheck, Trash2 } from 'lucide-react';
+import { Pencil, Search, ShieldCheck, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Cargando, ErrorEstado, Paginacion, Vacio } from '@/components/Estados';
@@ -111,6 +111,12 @@ function Publicaciones() {
                                     {p.autor.name} · {p.materia.nombre} · {fecha(p.publicado_en)}
                                 </p>
                             </div>
+                            <div className="flex shrink-0 gap-1">
+                            <Button asChild variant="ghost" size="icon" aria-label={`Editar ${p.titulo}`}>
+                                <Link to="/editar/$id" params={{ id: p.slug }}>
+                                    <Pencil />
+                                </Link>
+                            </Button>
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -123,6 +129,7 @@ function Publicaciones() {
                             >
                                 <Trash2 />
                             </Button>
+                            </div>
                         </div>
                     ))}
                     <Paginacion meta={lista.data.meta} alCambiar={setPagina} />

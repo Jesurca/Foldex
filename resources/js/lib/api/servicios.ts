@@ -46,6 +46,7 @@ export function formularioProyecto(datos: NuevoProyecto): FormData {
     if (datos.video_url) f.append('video_url', datos.video_url);
     for (const id of datos.tecnologias) f.append('tecnologias[]', String(id));
     if (datos.portada) f.append('portada', datos.portada);
+    if (datos.quitar_portada) f.append('quitar_portada', '1');
     return f;
 }
 
@@ -70,6 +71,12 @@ export const proyectos = {
     detalle: async (slug: string) => desenvolver(await api<{ data: Proyecto }>(`proyectos/${enc(slug)}`)),
     publicar: async (datos: NuevoProyecto) =>
         desenvolver(await api<{ data: Proyecto }>('proyectos', { method: 'POST', body: formularioProyecto(datos) })),
+    /** PHP no lee multipart en PUT: se envía POST con `_method=PUT` (Laravel lo trata como PUT). Solo admin. */
+    actualizar: async (slug: string, datos: NuevoProyecto) => {
+        const f = formularioProyecto(datos);
+        f.append('_method', 'PUT');
+        return desenvolver(await api<{ data: Proyecto }>(`proyectos/${enc(slug)}`, { method: 'POST', body: f }));
+    },
     eliminar: (slug: string) => api<void>(`proyectos/${enc(slug)}`, { method: 'DELETE' }),
 };
 

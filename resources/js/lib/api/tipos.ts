@@ -60,7 +60,8 @@ export interface Proyecto {
     comentarios_count: number;
     /** null cuando no hay sesión */
     liked: boolean | null;
-    can: { delete: boolean };
+    /** Solo orienta la interfaz; la API vuelve a validar con ProyectoPolicy (update = solo admin). */
+    can: { update: boolean; delete: boolean };
     publicado_en: string | null;
 }
 
@@ -136,6 +137,8 @@ export interface NuevoProyecto {
     tecnologias: number[];
     /** JPG, PNG o WebP de máximo 2 MB y al menos 300 × 150 px. */
     portada: File | null;
+    /** Solo al editar (PUT, admin): borra la foto actual. */
+    quitar_portada?: boolean;
 }
 
 /** Body de POST /register (RegisterRequest). */

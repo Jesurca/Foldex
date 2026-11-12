@@ -8,7 +8,7 @@ import { routeTree } from '@/routeTree.gen';
 describe('Rutas de la SPA', () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
 
-    it.each(['/', '/proyectos/campus-connect', '/publicar', '/mi-espacio', '/administracion'])('encuentra una página para %s', (ruta) => {
+    it.each(['/', '/proyectos/campus-connect', '/editar/campus-connect', '/publicar', '/mi-espacio', '/administracion'])('encuentra una página para %s', (ruta) => {
         expect(router.matchRoutes(ruta).at(-1)?.routeId).not.toBe(rootRouteId);
     });
 });

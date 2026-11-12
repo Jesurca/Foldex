@@ -1,9 +1,10 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { ArrowLeft, BookOpen, Calendar, CalendarRange, Copy, Github, GraduationCap, Heart, Loader2, Play, Plug, Send, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calendar, CalendarRange, Github, GraduationCap, Heart, Loader2, Pencil, Play, Plug, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { BotonConectarMcp } from '@/components/ConectarMcp';
 import { Cargando, ErrorEstado } from '@/components/Estados';
 import { ProjectShell } from '@/components/ProjectShell';
 import { ApiError, mensajeDeError } from '@/lib/api/client';
@@ -128,6 +129,14 @@ function Ficha({ p }: { p: Proyecto }) {
                                 <Heart className={p.liked ? 'fill-current' : ''} />
                                 {p.likes_count} Me gusta
                             </Button>
+                            {p.can.update && (
+                                <Button asChild variant="ghost">
+                                    <Link to="/editar/$id" params={{ id: p.slug }}>
+                                        <Pencil />
+                                        Editar proyecto
+                                    </Link>
+                                </Button>
+                            )}
                             {p.can.delete && (
                                 <Button
                                     variant="ghost"
@@ -187,7 +196,7 @@ function Ficha({ p }: { p: Proyecto }) {
                                 </p>
                             </div>
                         </section>
-                        <ConectaIA p={p} />
+                        <ConectaIA />
                     </aside>
                 </div>
             </main>
@@ -330,45 +339,16 @@ function Conversacion({ p }: { p: Proyecto }) {
     );
 }
 
-/** El servidor MCP aún no existe en el backend: se mantiene la opción de copiar el contexto público. */
-function ConectaIA({ p }: { p: Proyecto }) {
-    const [abierto, setAbierto] = useState(false);
-    const copiar = async () => {
-        const contexto = [
-            p.titulo,
-            p.contexto,
-            `Tecnologías: ${p.tecnologias.map((t) => t.nombre).join(', ')}`,
-            `Materia: ${p.materia.nombre} · Periodo ${p.periodo}`,
-            `Repositorio: ${p.repositorio_url}`,
-        ].join('\n');
-        try {
-            await navigator.clipboard.writeText(contexto);
-            toast.success('Contexto copiado');
-        } catch {
-            toast.error('No fue posible copiar el contexto');
-        }
-    };
-
+/** Invita a publicar desde Claude: el botón abre los pasos para conectar el servidor MCP (/mcp/proyectos). */
+function ConectaIA() {
     return (
         <section>
             <Plug className="size-6 text-primary" />
-            <h2 className="mt-3 text-lg font-bold">Conecta con tu IA</h2>
+            <h2 className="mt-3 text-lg font-bold">Publica desde tu IA</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Próximamente: servidor MCP del repositorio. Mientras tanto, copia el contexto público del proyecto para tu asistente.
+                Conecta Claude a tu cuenta por MCP y publica tu proyecto con un mensaje: tú das el repositorio y el docente; Claude escribe la descripción y elige la foto.
             </p>
-            <Button variant="outline" className="mt-4 w-full" onClick={() => setAbierto(!abierto)}>
-                <Plug />
-                Preparar contexto para Claude
-            </Button>
-            {abierto && (
-                <div className="mt-4 space-y-3">
-                    <p className="text-xs text-muted-foreground">Esto copia texto al portapapeles; no establece una conexión MCP.</p>
-                    <Button variant="secondary" onClick={() => void copiar()}>
-                        <Copy />
-                        Copiar contexto
-                    </Button>
-                </div>
-            )}
+            <BotonConectarMcp variante="outline" className="mt-4 w-full" />
         </section>
     );
 }
