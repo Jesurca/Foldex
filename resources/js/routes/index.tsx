@@ -3,13 +3,14 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ArrowRight, ArrowUpRight, BookOpen, Code2, FolderGit2, LayoutGrid, List, Search, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CarruselHero } from '@/components/CarruselHero';
 import { Cargando, ErrorEstado, Paginacion, Vacio } from '@/components/Estados';
 import { ProjectCard } from '@/components/ProjectCard';
 import { ProjectShell } from '@/components/ProjectShell';
 import { proyectos } from '@/lib/api/servicios';
 import type { FiltrosProyectos, RangoRanking } from '@/lib/api/tipos';
 import { useDocentes, useMaterias, useTecnologias } from '@/lib/consultas';
-import { campus, metadata } from '@/lib/formato';
+import { metadata } from '@/lib/formato';
 
 interface BusquedaCatalogo extends Omit<FiltrosProyectos, 'orden'> {
     vista?: 'lista' | undefined;
@@ -96,10 +97,9 @@ function Catalogo() {
         <ProjectShell>
             <main>
                 <section className="site-width pt-8">
-                    <div className="catalog-hero">
-                        <img src={campus} alt="Campus universitario ilustrativo" width={1536} height={1024} className="hero-photo" />
-                        <div className="hero-shade" />
-                        <div className="relative z-10 max-w-xl p-7 sm:p-10 lg:p-12">
+                    {/* Carrusel con las fotos de contexto_img/ y el texto de bienvenida encima */}
+                    <CarruselHero>
+                        <div className="relative z-10 max-w-xl p-7 pb-16 sm:p-10 sm:pb-16 lg:p-12 lg:pb-16">
                             <p className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest">
                                 <span className="h-1.5 w-1.5 rounded-full bg-primary" /> CONOCIMIENTO QUE SE COMPARTE
                             </p>
@@ -121,7 +121,7 @@ function Catalogo() {
                             </Button>
                         </div>
                         <span className="absolute bottom-5 right-6 z-10 hidden text-[10px] opacity-80 sm:block">COMUNIDAD · INGENIERÍA · INNOVACIÓN</span>
-                    </div>
+                    </CarruselHero>
                     <div className="grid grid-cols-3 border-b py-6">
                         <Stat icon={<FolderGit2 />} value={totalGeneral.data?.meta.total} label="Proyectos compartidos" />
                         <Stat icon={<BookOpen />} value={materias.data?.length} label="Materias del programa" />
