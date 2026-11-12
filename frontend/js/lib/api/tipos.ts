@@ -125,6 +125,12 @@ export interface FiltrosProyectos {
 
 export type RangoRanking = 'diario' | 'semanal' | 'mensual' | 'anual' | 'historico';
 
+/** Foto del carrusel (CarruselController@index). `url` lleva ?v= con la fecha del archivo. */
+export interface FotoCarrusel {
+    nombre: string;
+    url: string;
+}
+
 /** Body de POST /proyectos (StoreProyectoRequest). */
 export interface NuevoProyecto {
     titulo: string;

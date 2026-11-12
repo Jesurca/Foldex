@@ -1,27 +1,28 @@
-// Carrusel de fotos de la portada (inicio). Las fotos salen de la carpeta `contexto_img/`:
-// basta con agregar o quitar archivos .jpg/.png/.webp ahí y volver a compilar (`npm run build`).
+// Carrusel de fotos de la portada (inicio). Las fotos salen de la carpeta `frontend/contexto_img/`
+// y se piden a la API (GET /api/v1/carrusel) en vivo: al copiar una foto nueva en la carpeta,
+// aparece sola (al recargar o en máximo 1 minuto) con su propio punto de navegación, sin recompilar.
 
-// Imports: React (estado y temporizador), iconos de flechas y la ilustración de respaldo.
+// Imports: React Query (lista de fotos), React (estado y temporizador), iconos, servicios y la ilustración de respaldo.
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { catalogos } from '@/lib/api/servicios';
 import { campus } from '@/lib/formato';
 
-// Vite busca las imágenes al compilar y devuelve sus URLs finales (con hash para caché).
-const modulos = import.meta.glob<string>('../../contexto_img/*.{jpg,jpeg,png,webp,avif,JPG,JPEG,PNG,WEBP}', { eager: true, import: 'default' });
-
-/** Fotos ordenadas por nombre de archivo; si la carpeta está vacía se usa la ilustración del campus. */
-export const FOTOS_CONTEXTO: string[] = Object.keys(modulos)
-    .sort()
-    .map((ruta) => modulos[ruta])
-    .filter((url): url is string => Boolean(url));
-
 const INTERVALO_MS = 6000;
+/** Cada cuánto se vuelve a mirar la carpeta mientras la página está abierta. */
+const REVISAR_CARPETA_MS = 60_000;
 
 export function CarruselHero({ children }: { children: ReactNode }) {
-    const fotos = FOTOS_CONTEXTO.length ? FOTOS_CONTEXTO : [campus];
-    const [actual, setActual] = useState(0);
+    // --- Lista de fotos: si la carpeta está vacía o la API falla, se usa la ilustración del campus ---
+    const consulta = useQuery({ queryKey: ['carrusel'], queryFn: catalogos.carrusel, refetchInterval: REVISAR_CARPETA_MS, refetchOnWindowFocus: true });
+    const urls = consulta.data?.map((f) => f.url) ?? [];
+    const fotos = urls.length ? urls : [campus];
+    const [elegida, setActual] = useState(0);
     const [pausado, setPausado] = useState(false);
     const varias = fotos.length > 1;
+    // Si se borran fotos de la carpeta, el índice se ajusta al nuevo total.
+    const actual = elegida % fotos.length;
 
     // --- Avance automático: se detiene con el mouse encima, con el foco dentro o si el usuario prefiere menos movimiento ---
     useEffect(() => {

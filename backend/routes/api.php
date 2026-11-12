@@ -7,6 +7,7 @@
 use App\Http\Controllers\Api\V1\Admin\ProyectoController as AdminProyectoController;
 use App\Http\Controllers\Api\V1\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CarruselController;
 use App\Http\Controllers\Api\V1\CatalogoController;
 use App\Http\Controllers\Api\V1\ComentarioController;
 use App\Http\Controllers\Api\V1\LikeController;
@@ -34,6 +35,10 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/proyectos', [ProyectoController::class, 'index']);
     Route::get('/proyectos/{proyecto}', [ProyectoController::class, 'show']);
     Route::get('/proyectos/{proyecto}/comentarios', [ComentarioController::class, 'index']);
+
+    // Fotos del carrusel de la portada (se leen en vivo de frontend/contexto_img)
+    Route::get('/carrusel', [CarruselController::class, 'index']);
+    Route::get('/carrusel/{archivo}', [CarruselController::class, 'show'])->where('archivo', '[^/]+');
 
     // --- Todo lo de aquí abajo exige token: Authorization: Bearer <token> ---
     Route::middleware('auth:sanctum')->group(function (): void {

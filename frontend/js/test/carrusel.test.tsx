@@ -1,25 +1,52 @@
-// Pruebas del carrusel de la portada: lee las fotos de contexto_img/ y cambia de foto con los controles.
+// Pruebas del carrusel de la portada: pide las fotos a la API y crea un punto por cada foto.
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { CarruselHero, FOTOS_CONTEXTO } from '@/components/CarruselHero';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CarruselHero } from '@/components/CarruselHero';
 
-describe('carrusel de la portada', () => {
-    it('toma las fotos de la carpeta contexto_img', () => {
-        expect(FOTOS_CONTEXTO.length).toBeGreaterThan(0);
-    });
+/** Simula GET /api/v1/carrusel con la cantidad de fotos indicada. */
+function simularFotos(cantidad: number) {
+    const data = Array.from({ length: cantidad }, (_, i) => ({ nombre: `${i + 1}.jpg`, url: `/api/v1/carrusel/${i + 1}.jpg?v=1` }));
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ data }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+}
 
-    it('muestra el texto de bienvenida y avanza con la flecha', () => {
-        render(
+function montar() {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return render(
+        <QueryClientProvider client={queryClient}>
             <CarruselHero>
                 <h1>Proyectos UNAB</h1>
-            </CarruselHero>,
-        );
-        expect(screen.getByRole('heading', { name: 'Proyectos UNAB' })).toBeInTheDocument();
+            </CarruselHero>
+        </QueryClientProvider>,
+    );
+}
 
-        if (FOTOS_CONTEXTO.length > 1) {
-            expect(screen.getByAltText(`Comunidad UNAB, foto 1 de ${FOTOS_CONTEXTO.length}`)).toBeInTheDocument();
-            fireEvent.click(screen.getByRole('button', { name: 'Foto siguiente' }));
-            expect(screen.getByAltText(`Comunidad UNAB, foto 2 de ${FOTOS_CONTEXTO.length}`)).toBeInTheDocument();
-        }
+afterEach(() => vi.restoreAllMocks());
+
+describe('carrusel de la portada', () => {
+    it('crea un punto de navegación por cada foto de la carpeta', async () => {
+        simularFotos(3);
+        montar();
+
+        expect(await screen.findByRole('button', { name: 'Ver foto 3' })).toBeInTheDocument();
+        expect(screen.getAllByRole('button', { name: /^Ver foto/ })).toHaveLength(3);
+        expect(screen.getByRole('heading', { name: 'Proyectos UNAB' })).toBeInTheDocument();
+    });
+
+    it('avanza con la flecha', async () => {
+        simularFotos(2);
+        montar();
+
+        expect(await screen.findByAltText('Comunidad UNAB, foto 1 de 2')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Foto siguiente' }));
+        expect(screen.getByAltText('Comunidad UNAB, foto 2 de 2')).toBeInTheDocument();
+    });
+
+    it('sin fotos muestra la ilustración y no muestra controles', async () => {
+        simularFotos(0);
+        montar();
+
+        expect(await screen.findByAltText('Comunidad UNAB, foto 1 de 1')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Foto siguiente' })).not.toBeInTheDocument();
     });
 });

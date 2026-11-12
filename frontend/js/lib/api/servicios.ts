@@ -5,6 +5,7 @@ import { api } from './client';
 import type {
     Comentario,
     DatosRegistro,
+    FotoCarrusel,
     Docente,
     EstadoLike,
     FiltrosProyectos,
@@ -68,6 +69,8 @@ export const catalogos = {
     materias: async () => desenvolver(await api<{ data: Materia[] }>('materias')),
     docentes: async () => desenvolver(await api<{ data: Docente[] }>('docentes')),
     tecnologias: async () => desenvolver(await api<{ data: Tecnologia[] }>('tecnologias')),
+    /** Fotos del carrusel, leídas en vivo de frontend/contexto_img (GET /carrusel). */
+    carrusel: async () => desenvolver(await api<{ data: FotoCarrusel[] }>('carrusel')),
 };
 
 // Proyectos: listar, detalle, publicar, actualizar (admin) y eliminar.

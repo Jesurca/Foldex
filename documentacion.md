@@ -324,10 +324,12 @@ Prompt de ejemplo: *"Publica mi proyecto en el Repositorio de Proyectos UNAB. Re
 
 ## Paso 8 — Carrusel de fotos en la portada
 **Qué se hizo:** la foto grande del inicio ahora es un carrusel (`frontend/js/components/CarruselHero.tsx`) con las fotos de **`frontend/contexto_img/`**.
-- Para cambiar las fotos basta con agregar o quitar archivos `.jpg/.png/.webp` en esa carpeta y compilar (`npm run build`). Vite las encuentra con `import.meta.glob`, les pone un hash para la caché y las ordena por nombre de archivo. Si la carpeta queda vacía, se usa la ilustración del campus.
+- **Las fotos se leen en vivo, sin recompilar.** Basta con copiar o borrar archivos `.jpg/.jpeg/.png/.webp/.avif` en esa carpeta: al recargar la página (o en máximo 1 minuto si ya está abierta) aparece la foto con su propio punto de navegación. El orden es por nombre de archivo (`01-…`, `02-…` para elegirlo). Si la carpeta queda vacía, se usa la ilustración del campus.
+- Backend: `CarruselController` → `GET /api/v1/carrusel` lista las imágenes de `config('carrusel.ruta')` (`backend/config/carrusel.php`, cambiable con `CARRUSEL_RUTA`) y `GET /api/v1/carrusel/{archivo}` las sirve. Solo entrega archivos que estén en esa lista (nadie puede pedir `../../.env`) y no acepta SVG. La URL lleva `?v=<fecha del archivo>` para que el navegador no muestre una versión vieja si se reemplaza una foto con el mismo nombre.
+- Frontend: `CarruselHero` pide la lista con React Query (`refetchInterval` de 60 s). Antes se usaba `import.meta.glob`, que solo veía las fotos al compilar.
 - Cambia de foto cada 6 s con transición suave. Se pausa con el mouse encima o con el foco del teclado, y no avanza solo si el sistema pide "reducir movimiento". Las flechas y los puntos van abajo, en el centro, para no tapar el texto de bienvenida.
 - Las fotos actuales son verticales y el banner es horizontal, así que se recortan (centradas al 40 % para dejar ver las caras). Conviene usar fotos horizontales (≈ 1600 × 600 o más).
-**Commit:** `feat(front): carrusel de fotos de contexto_img en la portada`
+**Commits:** `feat(front): carrusel de fotos de contexto_img en la portada` · `feat: el carrusel lee contexto_img en vivo, sin recompilar`
 
 ---
 
