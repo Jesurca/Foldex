@@ -31,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
 
-        $esApi = fn (Request $request): bool => $request->is('api/*');
+        $esApi = fn (Request $request): bool => $request->is('api/*', 'mcp/*');
 
         $exceptions->render(fn (AuthenticationException $e, Request $request) => $esApi($request)
             ? response()->json(['message' => 'No autenticado. Inicia sesión y envía el token Bearer.'], 401)

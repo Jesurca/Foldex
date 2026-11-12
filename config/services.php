@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // Opcional: token de GitHub para que la herramienta MCP leer_repositorio no choque con el límite de 60 consultas/hora.
+    'github' => [
+        'token' => env('GITHUB_TOKEN'),
+    ],
+
 ];

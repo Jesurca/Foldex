@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 /*
@@ -47,4 +48,22 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/** PNG real (gris) en bytes, generado sin GD (no está instalado); así `image` y `dimensions` lo leen de verdad. */
+function pngBytes(int $ancho, int $alto): string
+{
+    $bloque = fn (string $tipo, string $datos) => pack('N', strlen($datos)).$tipo.$datos.pack('N', crc32($tipo.$datos));
+    $filas = str_repeat("\0".str_repeat("\x80", $ancho), $alto);
+
+    return "\x89PNG\r\n\x1a\n"
+        .$bloque('IHDR', pack('NNCCCCC', $ancho, $alto, 8, 0, 0, 0, 0))
+        .$bloque('IDAT', gzcompress($filas))
+        .$bloque('IEND', '');
+}
+
+/** El mismo PNG como archivo subido desde un formulario. */
+function pngDePrueba(string $nombre, int $ancho, int $alto): UploadedFile
+{
+    return UploadedFile::fake()->createWithContent($nombre, pngBytes($ancho, $alto));
 }

@@ -25,19 +25,6 @@ function datosProyecto(array $extra = []): array
     ], $extra);
 }
 
-/** PNG real (gris) generado sin GD, que no está instalado; así `image` y `dimensions` lo leen de verdad. */
-function pngDePrueba(string $nombre, int $ancho, int $alto): UploadedFile
-{
-    $bloque = fn (string $tipo, string $datos) => pack('N', strlen($datos)).$tipo.$datos.pack('N', crc32($tipo.$datos));
-    $filas = str_repeat("\0".str_repeat("\x80", $ancho), $alto);
-    $png = "\x89PNG\r\n\x1a\n"
-        .$bloque('IHDR', pack('NNCCCCC', $ancho, $alto, 8, 0, 0, 0, 0))
-        .$bloque('IDAT', gzcompress($filas))
-        .$bloque('IEND', '');
-
-    return UploadedFile::fake()->createWithContent($nombre, $png);
-}
-
 describe('catálogos', function (): void {
     it('lista materias, docentes y tecnologías sin autenticación', function (string $ruta): void {
         Materia::factory()->count(2)->create();
