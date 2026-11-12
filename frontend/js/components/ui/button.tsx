@@ -1,3 +1,6 @@
+// Botón base (estilo shadcn/ui) con variantes: default, outline, ghost, secondary, destructive.
+
+// Imports: Slot de Radix (asChild), variantes de clases y utilidad cn.
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";

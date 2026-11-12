@@ -1,3 +1,6 @@
+// Estructura común de todas las páginas: barra institucional, encabezado con menú, modo oscuro, pie y el modal de ingreso/registro.
+
+// Imports: router, iconos, avisos, botón, diálogo y la sesión (useAuth).
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { ArrowUpRight, Loader2, LogOut, Moon, Plus, Sun, UserRound } from 'lucide-react';
@@ -7,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { ApiError, mensajeDeError } from '@/lib/api/client';
 import { correoPermitido, DOMINIO_PERMITIDO, useAuth } from '@/lib/auth';
 
+// Logo "unab. Proyectos".
 export function Brand() {
     return (
         <Link to="/" className="flex items-center gap-3">
@@ -21,6 +25,7 @@ export function Brand() {
     );
 }
 
+// Lee el tema guardado (claro/oscuro).
 function leerTema(): boolean {
     try {
         return localStorage.getItem('unab-theme') === 'dark';
@@ -29,6 +34,7 @@ function leerTema(): boolean {
     }
 }
 
+// Layout: encabezado + contenido de la página + pie.
 export function ProjectShell({ children }: { children: ReactNode }) {
     const { usuario, esAdmin, salir, abrirModal } = useAuth();
     const navigate = useNavigate();
@@ -128,6 +134,7 @@ export function ProjectShell({ children }: { children: ReactNode }) {
 
 type Errores = Record<string, string | undefined>;
 
+// Mensaje de error debajo de un campo del formulario.
 function ErrorCampo({ mensaje, id }: { mensaje: string | undefined; id: string }) {
     if (!mensaje) return null;
     return (
@@ -137,6 +144,7 @@ function ErrorCampo({ mensaje, id }: { mensaje: string | undefined; id: string }
     );
 }
 
+// Modal de ingreso y registro (POST /api/v1/login y /register).
 function ModalAcceso() {
     const { modal, cerrarModal, cambiarModo, entrar, registrarse } = useAuth();
     const registro = modal.modo === 'registro';
@@ -274,6 +282,7 @@ function ModalAcceso() {
     );
 }
 
+// Invitación a ingresar cuando una página exige sesión.
 export function EmptyAccount() {
     const { abrirModal, cargando } = useAuth();
     if (cargando) return null;

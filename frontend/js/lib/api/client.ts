@@ -8,6 +8,7 @@ export const EVENTO_SESION_EXPIRADA = 'unab:sesion-expirada';
 
 export type ErroresValidacion = Record<string, string[]>;
 
+// Error de la API con su código HTTP y los errores 422 por campo.
 export class ApiError extends Error {
     readonly status: number;
     readonly errors: ErroresValidacion;
@@ -25,6 +26,7 @@ export class ApiError extends Error {
     }
 }
 
+// Mensajes en español por código HTTP.
 const MENSAJES: Record<number, string> = {
     401: 'Tu sesión no es válida. Ingresa de nuevo.',
     403: 'No tienes permiso para realizar esta acción.',
@@ -36,6 +38,7 @@ const MENSAJES: Record<number, string> = {
 
 const enNavegador = typeof window !== 'undefined';
 
+// Lectura y escritura del token en localStorage.
 export const token = {
     get(): string | null {
         if (!enNavegador) return null;
@@ -79,6 +82,7 @@ export function construirUrl(ruta: string, query?: Query): string {
     return `${API_URL.replace(/\/$/, '')}/${ruta.replace(/^\//, '')}${qs ? `?${qs}` : ''}`;
 }
 
+// fetch hacia /api/v1 con el token Bearer; convierte errores en ApiError.
 export async function api<T>(ruta: string, opciones: OpcionesApi = {}): Promise<T> {
     const { method = 'GET', body, query, signal } = opciones;
     const actual = token.get();

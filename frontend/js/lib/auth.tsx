@@ -1,3 +1,6 @@
+// Sesión del usuario: AuthProvider guarda quién está conectado y useAuth() lo expone a cualquier pantalla.
+
+// Imports: React Query, React, avisos y el cliente/servicios de la API.
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
@@ -34,6 +37,7 @@ interface AuthContexto {
 
 const Contexto = createContext<AuthContexto | null>(null);
 
+// Proveedor de sesión: carga /me, maneja login/registro/salida y el modal de acceso.
 export function AuthProvider({ children }: { children: ReactNode }) {
     const queryClient = useQueryClient();
     const [modal, setModal] = useState<{ abierto: boolean; modo: ModoModal }>({ abierto: false, modo: 'entrar' });
@@ -129,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }
 
+// Hook para leer la sesión desde cualquier componente.
 export function useAuth(): AuthContexto {
     const ctx = useContext(Contexto);
     if (!ctx) throw new Error('useAuth debe usarse dentro de <AuthProvider>');

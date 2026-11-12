@@ -1,3 +1,6 @@
+// Tarjeta de un proyecto en el catálogo y en "Mi espacio": portada, título, autor, tecnologías y me gusta.
+
+// Imports: enlace del router, iconos, botón, tipos y utilidades (like optimista y formato).
 import { Link } from '@tanstack/react-router';
 import { ArrowUpRight, Heart, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';

@@ -1,3 +1,6 @@
+// Ruta / (inicio): carrusel de fotos, estadísticas y el catálogo de proyectos más valorados con búsqueda y filtros.
+
+// Imports: React Query, router, React, iconos, componentes propios, servicios, tipos y catálogos.
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -12,6 +15,7 @@ import type { FiltrosProyectos, RangoRanking } from '@/lib/api/tipos';
 import { useDocentes, useMaterias, useTecnologias } from '@/lib/consultas';
 import { metadata } from '@/lib/formato';
 
+// Filtros que viven en la URL (?q=&materia=&...).
 interface BusquedaCatalogo extends Omit<FiltrosProyectos, 'orden'> {
     vista?: 'lista' | undefined;
 }
@@ -32,6 +36,7 @@ const RANGOS: { valor: RangoRanking; etiqueta: string }[] = [
 ];
 const esRango = (v: unknown): v is RangoRanking => RANGOS.some((r) => r.valor === v);
 
+// Registro de la ruta / y validación de los parámetros de la URL.
 export const Route = createFileRoute('/')({
     validateSearch: (s: Record<string, unknown>): BusquedaCatalogo => ({
         q: typeof s['q'] === 'string' && s['q'].trim() ? s['q'].slice(0, 100) : undefined,
@@ -47,6 +52,7 @@ export const Route = createFileRoute('/')({
     component: Catalogo,
 });
 
+// Página de inicio.
 function Catalogo() {
     const busqueda = Route.useSearch();
     const navigate = useNavigate({ from: '/' });
@@ -281,6 +287,7 @@ function Catalogo() {
     );
 }
 
+// Una cifra de la franja de estadísticas.
 function Stat({ icon, value, label }: { icon: ReactNode; value: number | undefined; label: string }) {
     return (
         <div className="flex flex-col items-center gap-2 border-r last:border-r-0 sm:flex-row sm:justify-center sm:gap-3">

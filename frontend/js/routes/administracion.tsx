@@ -1,3 +1,6 @@
+// Ruta /administracion (solo admin): moderar publicaciones (editar/eliminar) y gestionar cuentas.
+
+// Imports: React Query, router, React, iconos, avisos, componentes propios y servicios de admin.
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
@@ -12,11 +15,13 @@ import type { Usuario } from '@/lib/api/tipos';
 import { useAuth } from '@/lib/auth';
 import { fecha, metadata } from '@/lib/formato';
 
+// Registro de la ruta /administracion.
 export const Route = createFileRoute('/administracion')({
     head: () => metadata('Administración', 'Moderación de publicaciones y cuentas.'),
     component: Administracion,
 });
 
+// Exige rol admin y muestra las dos secciones.
 function Administracion() {
     const { usuario, esAdmin, cargando, abrirModal } = useAuth();
 
@@ -48,6 +53,7 @@ function Administracion() {
     );
 }
 
+// Texto de búsqueda con espera (debounce) antes de consultar.
 function useBusqueda() {
     const [texto, setTexto] = useState('');
     const [q, setQ] = useState('');
@@ -58,6 +64,7 @@ function useBusqueda() {
     return { texto, setTexto, q };
 }
 
+// Campo de búsqueda.
 function Buscador({ valor, alCambiar, etiqueta }: { valor: string; alCambiar: (v: string) => void; etiqueta: string }) {
     return (
         <div className="relative mb-4 max-w-sm">
@@ -67,6 +74,7 @@ function Buscador({ valor, alCambiar, etiqueta }: { valor: string; alCambiar: (v
     );
 }
 
+// Lista de proyectos con botones Editar (/editar/$id) y Eliminar (DELETE /admin/proyectos/{slug}).
 function Publicaciones() {
     const queryClient = useQueryClient();
     const { texto, setTexto, q } = useBusqueda();
@@ -139,6 +147,7 @@ function Publicaciones() {
     );
 }
 
+// Lista de usuarios con botón Eliminar (DELETE /admin/users/{id}).
 function Cuentas({ yo }: { yo: Usuario }) {
     const queryClient = useQueryClient();
     const { texto, setTexto, q } = useBusqueda();

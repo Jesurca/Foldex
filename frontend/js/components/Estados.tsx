@@ -1,9 +1,13 @@
+// Componentes de estado reutilizables: cargando, error con reintento, lista vacía y paginación.
+
+// Imports: iconos, tipos de React, botón y utilidades del cliente API.
 import { AlertTriangle, ChevronLeft, ChevronRight, Loader2, RotateCw } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { mensajeDeError } from '@/lib/api/client';
 import type { MetaPaginacion } from '@/lib/api/tipos';
 
+// Indicador de carga.
 export function Cargando({ texto = 'Cargando…' }: { texto?: string }) {
     return (
         <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground" role="status">
@@ -13,6 +17,7 @@ export function Cargando({ texto = 'Cargando…' }: { texto?: string }) {
     );
 }
 
+// Mensaje de error de la API con botón "Reintentar".
 export function ErrorEstado({ error, reintentar }: { error: unknown; reintentar?: () => void }) {
     return (
         <div className="flex flex-col items-center gap-3 py-16 text-center" role="alert">
@@ -28,10 +33,12 @@ export function ErrorEstado({ error, reintentar }: { error: unknown; reintentar?
     );
 }
 
+// Mensaje cuando una lista no tiene elementos.
 export function Vacio({ children }: { children: ReactNode }) {
     return <p className="py-16 text-center text-muted-foreground">{children}</p>;
 }
 
+// Botones anterior/siguiente según `meta` de Laravel.
 export function Paginacion({ meta, alCambiar }: { meta: MetaPaginacion; alCambiar: (pagina: number) => void }) {
     if (meta.last_page <= 1) return null;
     return (

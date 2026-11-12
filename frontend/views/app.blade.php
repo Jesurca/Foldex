@@ -1,3 +1,5 @@
+{{-- HTML base de la SPA. Laravel lo entrega en cualquier ruta que no sea /api o /mcp (backend/routes/web.php).
+     @vite carga el CSS y el JS compilados desde frontend/; React se monta en <div id="app">. --}}
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>

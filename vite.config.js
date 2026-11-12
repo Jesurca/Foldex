@@ -1,3 +1,6 @@
+// Configuración de Vite: compila el frontend (frontend/js y frontend/css) hacia public/build para Laravel.
+
+// Imports: Vite, el plugin de Laravel, React, Tailwind, el generador de rutas de TanStack y path.
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import react from '@vitejs/plugin-react';

@@ -1,3 +1,4 @@
+// Imports: React Query, router, Vitest y el árbol de rutas generado.
 import { QueryClient } from '@tanstack/react-query';
 import { createRouter, rootRouteId } from '@tanstack/react-router';
 import { describe, expect, it } from 'vitest';

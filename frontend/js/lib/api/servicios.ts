@@ -1,3 +1,6 @@
+// Un método por endpoint de la API (/api/v1). Las pantallas llaman a estas funciones, nunca a fetch directamente.
+
+// Imports: el cliente HTTP y los tipos de las respuestas.
 import { api } from './client';
 import type {
     Comentario,
@@ -50,6 +53,7 @@ export function formularioProyecto(datos: NuevoProyecto): FormData {
     return f;
 }
 
+// Sesión: /login, /register, /me, /logout.
 export const auth = {
     login: (email: string, password: string) =>
         api<RespuestaSesion>('login', { method: 'POST', body: { email, password, device_name: 'web' } }),
@@ -59,12 +63,14 @@ export const auth = {
     logout: () => api<void>('logout', { method: 'POST' }),
 };
 
+// Catálogos públicos: /materias, /docentes, /tecnologias.
 export const catalogos = {
     materias: async () => desenvolver(await api<{ data: Materia[] }>('materias')),
     docentes: async () => desenvolver(await api<{ data: Docente[] }>('docentes')),
     tecnologias: async () => desenvolver(await api<{ data: Tecnologia[] }>('tecnologias')),
 };
 
+// Proyectos: listar, detalle, publicar, actualizar (admin) y eliminar.
 export const proyectos = {
     listar: async (filtros: FiltrosProyectos = {}) =>
         paginado(await api<Paginado<Proyecto>>('proyectos', { query: { ...filtros } })),
@@ -80,11 +86,13 @@ export const proyectos = {
     eliminar: (slug: string) => api<void>(`proyectos/${enc(slug)}`, { method: 'DELETE' }),
 };
 
+// Me gusta: POST y DELETE /proyectos/{slug}/like.
 export const likes = {
     dar: (slug: string) => api<EstadoLike>(`proyectos/${enc(slug)}/like`, { method: 'POST' }),
     quitar: (slug: string) => api<EstadoLike>(`proyectos/${enc(slug)}/like`, { method: 'DELETE' }),
 };
 
+// Comentarios de un proyecto.
 export const comentarios = {
     listar: async (slug: string, page = 1) =>
         paginado(await api<Paginado<Comentario>>(`proyectos/${enc(slug)}/comentarios`, { query: { page } })),
@@ -93,6 +101,7 @@ export const comentarios = {
     eliminar: (id: number) => api<void>(`comentarios/${id}`, { method: 'DELETE' }),
 };
 
+// Mi espacio y tokens personales (/me/...). Los tokens también conectan Claude por MCP.
 export const perfil = {
     proyectos: async (page = 1) => paginado(await api<Paginado<Proyecto>>('me/proyectos', { query: { page } })),
     likes: async (page = 1) => paginado(await api<Paginado<Proyecto>>('me/likes', { query: { page } })),
@@ -101,6 +110,7 @@ export const perfil = {
     eliminarToken: (id: number) => api<void>(`me/tokens/${id}`, { method: 'DELETE' }),
 };
 
+// Panel de administración (/admin/...), solo rol admin.
 export const admin = {
     proyectos: async (page = 1, q = '') => paginado(await api<Paginado<Proyecto>>('admin/proyectos', { query: { page, q } })),
     eliminarProyecto: (slug: string) => api<void>(`admin/proyectos/${enc(slug)}`, { method: 'DELETE' }),

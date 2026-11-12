@@ -1,3 +1,6 @@
+// Utilidades de presentación: portadas, fechas, iniciales, video incrustado y metadatos de la página.
+
+// Imports: las 3 ilustraciones que se usan cuando un proyecto no tiene foto.
 import campus from '@/assets/campus-project.jpg';
 import health from '@/assets/health-project.jpg';
 import robot from '@/assets/robot-project.jpg';

@@ -1,3 +1,6 @@
+// Ruta /proyectos/$id: detalle de un proyecto (video o portada, contexto, autor, me gusta, comentarios) y acceso a "Conéctate por MCP".
+
+// Imports: React Query, router, React, iconos, avisos, componentes propios, servicios y utilidades.
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -14,11 +17,13 @@ import { useAuth } from '@/lib/auth';
 import { useLike } from '@/lib/consultas';
 import { fecha, iniciales, metadata, portada, urlVideoEmbebido } from '@/lib/formato';
 
+// Registro de la ruta; $id es el slug del proyecto.
 export const Route = createFileRoute('/proyectos/$id')({
     head: () => metadata('Detalle del proyecto', 'Conoce el contexto, las tecnologías y los creadores de un proyecto universitario.'),
     component: Detalle,
 });
 
+// Carga el proyecto y maneja 404 y errores.
 function Detalle() {
     const { id: slug } = Route.useParams();
     const consulta = useQuery({ queryKey: ['proyectos', 'detalle', slug], queryFn: () => proyectos.detalle(slug) });
@@ -56,6 +61,7 @@ function Detalle() {
     return <Ficha p={consulta.data} />;
 }
 
+// Contenido del proyecto. Editar aparece si can.update (admin) y Eliminar si can.delete (dueño o admin).
 function Ficha({ p }: { p: Proyecto }) {
     const alternarLike = useLike();
     const navigate = useNavigate();
@@ -204,6 +210,7 @@ function Ficha({ p }: { p: Proyecto }) {
     );
 }
 
+// Comentarios paginados: listar, publicar y borrar.
 function Conversacion({ p }: { p: Proyecto }) {
     const { usuario, abrirModal } = useAuth();
     const queryClient = useQueryClient();

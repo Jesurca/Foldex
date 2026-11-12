@@ -1,3 +1,6 @@
+// Pruebas del cliente API, formularios multipart, correo institucional, portadas y video incrustado.
+
+// Imports: Vitest y las funciones que se prueban.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { api, ApiError, construirUrl, EVENTO_SESION_EXPIRADA, token } from '@/lib/api/client';
 import { desenvolver, formularioProyecto, paginado } from '@/lib/api/servicios';

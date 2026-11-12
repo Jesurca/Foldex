@@ -1,4 +1,7 @@
+// Diálogo modal accesible (Radix UI con estilo shadcn/ui). Lo usan el ingreso y "Conéctate por MCP".
 
+
+// Imports: Radix Dialog, icono de cerrar y utilidad cn.
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";

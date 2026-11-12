@@ -1,3 +1,6 @@
+// Ruta /mi-espacio: mis publicaciones y los proyectos que me gustan (GET /api/v1/me/proyectos y /me/likes).
+
+// Imports: React Query, router, iconos, componentes propios, servicios y sesión.
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { FolderOpen, Heart, Plus } from 'lucide-react';
@@ -12,6 +15,7 @@ import { metadata } from '@/lib/formato';
 
 type Pestana = 'mios' | 'likes';
 
+// Registro de la ruta /mi-espacio (la pestaña activa va en la URL).
 export const Route = createFileRoute('/mi-espacio')({
     validateSearch: (s: Record<string, unknown>): { tab?: 'likes' | undefined; page?: number | undefined } => {
         const page = Number(s['page']);
@@ -21,6 +25,7 @@ export const Route = createFileRoute('/mi-espacio')({
     component: MiEspacio,
 });
 
+// Exige sesión.
 function MiEspacio() {
     const { usuario, cargando } = useAuth();
     return (
@@ -30,6 +35,7 @@ function MiEspacio() {
     );
 }
 
+// Pestañas con las dos listas paginadas.
 function Contenido({ usuario }: { usuario: Usuario }) {
     const { tab, page = 1 } = Route.useSearch();
     const navigate = useNavigate({ from: '/mi-espacio' });

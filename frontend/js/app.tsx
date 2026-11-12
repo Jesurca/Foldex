@@ -1,3 +1,6 @@
+// Punto de entrada del frontend: crea React Query, el router (TanStack) y monta la SPA en <div id="app"> (frontend/views/app.blade.php).
+
+// Imports: React Query, TanStack Router, React y el árbol de rutas generado desde js/routes.
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { StrictMode } from 'react';

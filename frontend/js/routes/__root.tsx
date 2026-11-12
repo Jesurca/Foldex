@@ -1,8 +1,12 @@
+// Ruta raíz de TanStack Router: envuelve todas las páginas con la sesión, los avisos (toasts) y las páginas de error/404.
+
+// Imports: tipos de React Query, utilidades del router, avisos y el proveedor de sesión.
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Link, Outlet, useRouter, type ErrorComponentProps } from '@tanstack/react-router';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/lib/auth';
 
+// Página 404.
 function NoEncontrada() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -23,6 +27,7 @@ function NoEncontrada() {
     );
 }
 
+// Página de error inesperado con botón para reintentar.
 function ErrorGeneral({ error, reset }: ErrorComponentProps) {
     console.error(error);
     const router = useRouter();
@@ -54,6 +59,7 @@ function ErrorGeneral({ error, reset }: ErrorComponentProps) {
     );
 }
 
+// Registro de la ruta raíz (recibe el QueryClient como contexto).
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
     head: () => ({
         meta: [{ title: 'UNAB Proyectos' }, { name: 'description', content: 'Biblioteca de proyectos de Ingeniería de Sistemas' }],
@@ -63,6 +69,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     errorComponent: ErrorGeneral,
 });
 
+// Contenedor de todas las páginas: sesión + página actual (Outlet) + avisos.
 function Raiz() {
     return (
         <AuthProvider>

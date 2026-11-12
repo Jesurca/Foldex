@@ -1,3 +1,5 @@
+// Preparación de Vitest: matchers de Testing Library y un localStorage en memoria.
+
 import "@testing-library/jest-dom/vitest";
 
 // Node 25+ trae un `localStorage` global sin archivo de respaldo que pisa el de jsdom

@@ -1,3 +1,6 @@
+// Consultas de React Query reutilizables: catálogos cacheados y "me gusta" optimista.
+
+// Imports: React Query, avisos, cliente y servicios de la API y la sesión.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ApiError, mensajeDeError } from './api/client';
