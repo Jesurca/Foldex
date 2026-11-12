@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Foldex</title>
     <meta name="description" content="Foldex: repositorio de proyectos de Ingeniería de Sistemas de la UNAB">
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link r<link rel="icon" type="image/png" href="{{ asset('favicon.png') }}" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
